@@ -1,19 +1,54 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
+import { BigNumber, utils } from "ethers";
 import { ethers } from "hardhat";
+import {
+  ACDMPlatform,
+  ACDMPlatform__factory,
+  ACDMToken,
+  ACDMToken__factory,
+} from "../typechain-types";
 
-describe("Greeter", function () {
-  it("Should return the new greeting once it's changed", async function () {
-    const Greeter = await ethers.getContractFactory("Greeter");
-    const greeter = await Greeter.deploy("Hello, world!");
-    await greeter.deployed();
+describe("ACDMPlatform", function () {
+  let signer: SignerWithAddress;
+  let platform: ACDMPlatform;
+  let adcmToken: ACDMToken;
+  const ROUND_TIME = 60;
+  const SALE = 0;
 
-    expect(await greeter.greet()).to.equal("Hello, world!");
+  beforeEach(async () => {
+    [signer] = await ethers.getSigners();
+    adcmToken = await new ACDMToken__factory(signer).deploy(
+      "ACDM TOkEN",
+      "ACDM"
+    );
+    platform = await new ACDMPlatform__factory(signer).deploy(
+      adcmToken.address,
+      BigNumber.from(ROUND_TIME)
+    );
+    await adcmToken.setRoleTo(
+      utils.formatBytes32String("MINTER_ROLE"),
+      platform.address
+    );
+    expect(
+      await adcmToken.hasRole(
+        utils.formatBytes32String("MINTER_ROLE"),
+        platform.address
+      )
+    );
+    await adcmToken.setRoleTo(
+      utils.formatBytes32String("BURNER_ROLE"),
+      platform.address
+    );
+  });
 
-    const setGreetingTx = await greeter.setGreeting("Hola, mundo!");
-
-    // wait until the transaction is mined
-    await setGreetingTx.wait();
-
-    expect(await greeter.greet()).to.equal("Hola, mundo!");
+  describe("deploy", () => {
+    it("should deploy ACDMPlatform", async () => {
+      expect(platform.address).to.be.properAddress;
+      expect(await platform._ACDMToken()).to.eq(adcmToken.address);
+      expect(await platform._roundTime()).to.eq(ROUND_TIME);
+      expect(await platform.ACDM_AMOUNT()).to.eq(10 ** 5);
+      expect(await platform._roundStatus()).to.eq(SALE);
+    });
   });
 });
