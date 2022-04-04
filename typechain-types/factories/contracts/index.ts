@@ -2,4 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as test from "./test";
-export { ACDMPlatform__factory } from "./ACDMPlatform__factory";
+export { TradePlatform__factory } from "./TradePlatform__factory";

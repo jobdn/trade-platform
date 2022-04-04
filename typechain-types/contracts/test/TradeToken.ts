@@ -26,7 +26,7 @@ import type {
   OnEvent,
 } from "../../common";
 
-export interface ACDMTokenInterface extends utils.Interface {
+export interface TradeTokenInterface extends utils.Interface {
   functions: {
     "ADMIN_ROLE()": FunctionFragment;
     "BURNER_ROLE()": FunctionFragment;
@@ -298,12 +298,12 @@ export type TransferEvent = TypedEvent<
 
 export type TransferEventFilter = TypedEventFilter<TransferEvent>;
 
-export interface ACDMToken extends BaseContract {
+export interface TradeToken extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
 
-  interface: ACDMTokenInterface;
+  interface: TradeTokenInterface;
 
   queryFilter<TEvent extends TypedEvent>(
     event: TypedEventFilter<TEvent>,

@@ -20,7 +20,7 @@ export type { ERC165 } from "./@openzeppelin/contracts/utils/introspection/ERC16
 export { ERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/ERC165__factory";
 export type { IERC165 } from "./@openzeppelin/contracts/utils/introspection/IERC165";
 export { IERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/IERC165__factory";
-export type { ACDMPlatform } from "./contracts/ACDMPlatform";
-export { ACDMPlatform__factory } from "./factories/contracts/ACDMPlatform__factory";
-export type { ACDMToken } from "./contracts/test/ACDMToken";
-export { ACDMToken__factory } from "./factories/contracts/test/ACDMToken__factory";
+export type { TradeToken } from "./contracts/test/TradeToken";
+export { TradeToken__factory } from "./factories/contracts/test/TradeToken__factory";
+export type { TradePlatform } from "./contracts/TradePlatform";
+export { TradePlatform__factory } from "./factories/contracts/TradePlatform__factory";

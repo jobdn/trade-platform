@@ -41,13 +41,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC165__factory>;
     getContractFactory(
-      name: "ACDMPlatform",
+      name: "TradeToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ACDMPlatform__factory>;
+    ): Promise<Contracts.TradeToken__factory>;
     getContractFactory(
-      name: "ACDMToken",
+      name: "TradePlatform",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ACDMToken__factory>;
+    ): Promise<Contracts.TradePlatform__factory>;
 
     getContractAt(
       name: "AccessControl",
@@ -85,15 +85,15 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IERC165>;
     getContractAt(
-      name: "ACDMPlatform",
+      name: "TradeToken",
       address: string,
       signer?: ethers.Signer
-    ): Promise<Contracts.ACDMPlatform>;
+    ): Promise<Contracts.TradeToken>;
     getContractAt(
-      name: "ACDMToken",
+      name: "TradePlatform",
       address: string,
       signer?: ethers.Signer
-    ): Promise<Contracts.ACDMToken>;
+    ): Promise<Contracts.TradePlatform>;
 
     // default types
     getContractFactory(
