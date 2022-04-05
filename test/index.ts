@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { expect } from "chai";
+import { expect, util } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import { ethers, network } from "hardhat";
 import {
@@ -301,6 +301,41 @@ describe("ACDMPlatform", function () {
       expect(await platform.roundStartTime()).to.eq(ts);
       expect(await platform.roundEndTime()).to.eq(ts + ROUND_TIME);
       expect(await platform.roundStatus()).to.eq(SALE);
+    });
+  });
+
+  describe("addOrder", () => {
+    it("should be possible to add order", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(1000, { value: utils.parseEther("0.01") });
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+
+      await platform.startTradeRound();
+      await token.approve(platform.address, 1000);
+      await platform.addOrder(100, utils.parseEther("0.02"));
+
+      // check
+      const firstOrder = await platform.orders(0);
+      expect(firstOrder.tokensAmount).to.eq(100);
+      expect(firstOrder.price).to.eq(utils.parseEther("0.02"));
+      expect(firstOrder.seller).to.eq(signer.address);
+      expect(firstOrder.closed).to.eq(false);
+      expect(await token.balanceOf(platform.address)).to.eq(100);
+    });
+
+    it("should be fail if _amount is equal to zero", async () => {
+      await token.approve(platform.address, 1000);
+      await expect(
+        platform.addOrder(0, utils.parseEther("0.02"))
+      ).to.be.revertedWith("Platform: zero funds");
+    });
+
+    it("should be fail if sale round", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("0.02") });
+      await expect(
+        platform.addOrder(10, utils.parseEther("0.02"))
+      ).to.be.revertedWith("Platform: only trade round function");
     });
   });
 });

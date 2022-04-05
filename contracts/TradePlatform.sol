@@ -13,13 +13,12 @@ contract TradePlatform is ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public INITIAL_TOKEN_AMOUNT;
     uint256 public roundTime;
-    address public token;
-
     uint256 public tradeStock;
     uint256 public roundStartTime;
     uint256 public roundEndTime;
     uint256 public tokenPrice;
     uint256 public tokens;
+    address public token;
     RoundStatus public roundStatus;
 
     mapping(address => uint256) public _balances;
@@ -41,6 +40,8 @@ contract TradePlatform is ReentrancyGuard {
         address seller;
         bool closed;
     }
+
+    Order[] public orders;
 
     error NotExpiredTimeError(string errorMsg);
 
@@ -162,5 +163,28 @@ contract TradePlatform is ReentrancyGuard {
         }
     }
 
-    function addOrder(uint256 _amount, uint256 _price) public {}
+    /**  @notice Explain to an end user what this does
+     * @dev If seller doesn't have enough tokens, then transaction will reverted with reason string 'ERC20: insufficient allowance'
+     * @param _amount parameter just like in doxygen (must be followed by parameter name)
+     * @param  _price parameter just like in doxygen (must be followed by parameter name)
+     */
+    function addOrder(uint256 _amount, uint256 _price) public {
+        require(
+            _amount != 0 && users[msg.sender].amountOfTokens >= _amount,
+            "Platform: zero funds"
+        );
+        require(
+            roundStatus == RoundStatus.TRADE,
+            "Platform: only trade round function"
+        );
+        orders.push(
+            Order({
+                tokensAmount: _amount,
+                price: _price,
+                seller: msg.sender,
+                closed: false
+            })
+        );
+        IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
+    }
 }
