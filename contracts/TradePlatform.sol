@@ -35,6 +35,13 @@ contract TradePlatform is ReentrancyGuard {
         bool isReferer;
     }
 
+    struct Order {
+        uint256 tokensAmount;
+        uint256 currentPrice;
+        address seller;
+        bool closed;
+    }
+
     error NotExpiredTimeError(string errorMsg);
 
     constructor(address _token, uint256 _roundTime) {
@@ -97,6 +104,7 @@ contract TradePlatform is ReentrancyGuard {
             roundStatus == RoundStatus.SALE,
             "Platform: sale round is not over"
         );
+        // TODO: Can I implement this using require?
         if (block.timestamp <= endsAt && tokens != 0) {
             revert NotExpiredTimeError(
                 "Platform: time of the last round is not over"
@@ -125,20 +133,23 @@ contract TradePlatform is ReentrancyGuard {
         );
         // TODO: Do i need this checking?
         require(roundStatus == RoundStatus.SALE, "Platform: only sale round");
-        if (msg.value / tokenPrice > _amount) {
-            msg.sender.call{value: msg.value - tokenPrice * _amount}(
-                "You sent more than need ETH"
-            );
+
+        uint256 refund = msg.value - tokenPrice * _amount;
+        if (refund > 0) {
+            msg.sender.call{value: refund}("You sent more than need ETH");
         }
-        if (users[msg.sender].referer != address(0)) {
-            if (users[users[msg.sender].referer].referer != address(0)) {
+
+        address firstReferer = users[msg.sender].referer;
+        if (firstReferer != address(0)) {
+            address secondReferer = users[firstReferer].referer;
+            if (secondReferer != address(0)) {
                 uint256 SECOND_REFERER_FEE = 3;
-                users[users[msg.sender].referer].referer.call{
+                secondReferer.call{
                     value: (_amount * tokenPrice * SECOND_REFERER_FEE) / 100
                 }("Percentage of first referer");
             }
             uint256 FIRST_REFERER_FEE = 5;
-            users[msg.sender].referer.call{
+            firstReferer.call{
                 value: (_amount * tokenPrice * FIRST_REFERER_FEE) / 100
             }("Percentage of second referer");
         }
