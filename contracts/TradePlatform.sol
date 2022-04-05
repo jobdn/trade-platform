@@ -45,6 +45,8 @@ contract TradePlatform is ReentrancyGuard {
     error NotExpiredTimeError(string errorMsg);
 
     constructor(address _token, uint256 _roundTime) {
+        require(_token != address(0), "Platform: invalid token");
+        require(_roundTime != 0, "Platform: invalid round time");
         token = _token;
         roundTime = _roundTime;
         roundStatus = RoundStatus.TRADE;
@@ -159,4 +161,6 @@ contract TradePlatform is ReentrancyGuard {
             address(this).call(abi.encodeWithSignature("startTradeRound()"));
         }
     }
+
+    function addOrder(uint256 _amount, uint256 _price) public {}
 }

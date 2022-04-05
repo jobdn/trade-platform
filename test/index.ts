@@ -24,10 +24,22 @@ describe("ACDMPlatform", function () {
   beforeEach(async () => {
     [signer, acc1, acc2] = await ethers.getSigners();
     token = await new TradeToken__factory(signer).deploy("TRADE TOKEN", "TTKN");
+
+    await expect(
+      new TradePlatform__factory(signer).deploy(token.address, 0)
+    ).to.be.revertedWith("Platform: invalid round time");
+    await expect(
+      new TradePlatform__factory(signer).deploy(
+        constants.AddressZero,
+        BigNumber.from(ROUND_TIME)
+      )
+    ).to.be.revertedWith("Platform: invalid token");
+
     platform = await new TradePlatform__factory(signer).deploy(
       token.address,
       BigNumber.from(ROUND_TIME)
     );
+
     await token.grantMintAndBurnRolesTo(platform.address);
     expect(
       await token.hasRole(
@@ -51,6 +63,8 @@ describe("ACDMPlatform", function () {
       expect(await platform.INITIAL_TOKEN_AMOUNT()).to.eq(INITIAL_TOKEN_AMOUNT);
       expect(await platform.roundStatus()).to.eq(TRADE);
     });
+
+    it("should be fail if token is equal to zero address", async () => {});
   });
 
   // HELPERS
@@ -152,13 +166,13 @@ describe("ACDMPlatform", function () {
     it("should be possible to buy tokens with revert tokens back", async () => {
       await platform.startSaleRound();
 
-      for (let i = 1; i < 3; i++) {
-        // check
+      // buy tokens five times
+      for (let i = 1; i < 5; i++) {
         await expect(
           await platform.buyToken(100, { value: utils.parseEther("0.01") })
         ).to.changeEtherBalances(
           [signer, platform],
-          [-INITIAL_PRICE.toNumber() * 100, INITIAL_PRICE.toNumber() * 100]
+          [utils.parseEther(`-0.001`), utils.parseEther(`0.001`)]
         );
         expect((await platform.users(signer.address)).amountOfTokens).to.eq(
           i * 100
@@ -166,19 +180,18 @@ describe("ACDMPlatform", function () {
         expect(await platform.tokens()).to.eq(INITIAL_TOKEN_AMOUNT - i * 100);
         expect(await token.balanceOf(signer.address)).to.eq(i * 100);
       }
-      expect((await platform.users(signer.address)).isReferer).to.eq(false);
-      expect((await platform.users(signer.address)).referer).to.eq(
-        constants.AddressZero
-      );
+
+      const user = await platform.users(signer.address);
+      expect(user.isReferer).to.eq(false);
+      expect(user.referer).to.eq(constants.AddressZero);
     });
 
     it("should be possible to buy all tokens and start trade round", async () => {
-      const PAYABLE_TOKENS = 100000;
       await platform.startSaleRound();
 
       // check
       await expect(
-        await platform.buyToken(PAYABLE_TOKENS, {
+        await platform.buyToken(INITIAL_TOKEN_AMOUNT, {
           value: utils.parseEther("1"),
         })
       ).to.changeEtherBalances(
