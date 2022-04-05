@@ -44,8 +44,7 @@ contract TradePlatform is ReentrancyGuard {
         INITIAL_TOKEN_AMOUNT = 10**5;
     }
 
-    /**@notice User can register using this function
-     * @dev It is needed
+    /**@notice User needs to call this function to become referer
      * @param _referer Address of referer
      */
     function register(address _referer) public {
@@ -112,6 +111,8 @@ contract TradePlatform is ReentrancyGuard {
 
     /**
         @notice User can buy ACDM tokens for ETH
+        @dev If user sends tokens more than necessary, then the excess is sent back 
+        @param _amount Amount of purchased tokens
      */
     function buyToken(uint256 _amount) public payable nonReentrant {
         require(
@@ -129,7 +130,6 @@ contract TradePlatform is ReentrancyGuard {
                 "You sent more than need ETH"
             );
         }
-        // TODO: I need to create a referal programm
         if (users[msg.sender].referer != address(0)) {
             if (users[users[msg.sender].referer].referer != address(0)) {
                 uint256 SECOND_REFERER_FEE = 3;
