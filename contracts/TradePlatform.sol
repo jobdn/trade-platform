@@ -103,7 +103,7 @@ contract TradePlatform is ReentrancyGuard {
             );
         }
 
-        //TODO: If some tokens remain, then burn them
+        TradeToken(token).burn(address(this), tokens);
         startsAt = block.timestamp;
         endsAt = startsAt + roundTime;
         roundStatus = RoundStatus.TRADE;

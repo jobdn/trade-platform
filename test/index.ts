@@ -106,7 +106,7 @@ describe("ACDMPlatform", function () {
   describe("register", () => {
     it("should be possible to register user", async () => {
       const signers = await ethers.getSigners();
-      for (let i = 2; i < 10; i++) {
+      for (let i = 2; i < 5; i++) {
         // Initial referer
         await platform.connect(signers[i]).register(constants.AddressZero);
         const user = await platform.users(signers[i].address);
@@ -150,7 +150,7 @@ describe("ACDMPlatform", function () {
     it("should be possible to buy tokens with revert tokens back", async () => {
       await platform.startSaleRound();
 
-      for (let i = 1; i < 10; i++) {
+      for (let i = 1; i < 3; i++) {
         // check
         await expect(
           await platform.buyToken(100, { value: utils.parseEther("0.01") })
@@ -267,6 +267,7 @@ describe("ACDMPlatform", function () {
       expect(await platform.startsAt()).to.eq(ts);
       expect(await platform.endsAt()).to.eq(ts + ROUND_TIME);
       expect(await platform.roundStatus()).to.eq(TRADE);
+      expect(await token.balanceOf(platform.address)).to.eq(0);
     });
 
     it("should be fail if user tries to start trade round again after trade round", async () => {

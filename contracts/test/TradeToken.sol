@@ -31,6 +31,6 @@ contract TradeToken is ERC20, AccessControl {
 
     function burn(address owner, uint256 amount) public {
         require(hasRole(BURNER_ROLE, msg.sender), "ACDMToken: not burner");
-        _mint(owner, amount);
+        _burn(owner, amount);
     }
 }
