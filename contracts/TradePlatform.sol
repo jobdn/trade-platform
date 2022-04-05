@@ -50,16 +50,9 @@ contract TradePlatform is ReentrancyGuard {
      */
     function register(address _referer) public {
         require(msg.sender != _referer, "Plafrotm: invalid referer");
-        if (
-            !users[msg.sender].isReferer &&
-            users[msg.sender].amountOfTokens == 0
-        ) {
-            users[msg.sender] = User({
-                amountOfTokens: 0,
-                referer: address(0),
-                isReferer: true
-            });
-        }
+
+        users[msg.sender].isReferer = true;
+
         if (_referer != address(0)) {
             require(
                 users[_referer].isReferer,
@@ -79,7 +72,7 @@ contract TradePlatform is ReentrancyGuard {
         );
         require(
             block.timestamp > endsAt,
-            "Platform: time of last round is not over"
+            "Platform: time of the last round is not over"
         );
 
         if (tokenPrice == 0) {
@@ -88,7 +81,7 @@ contract TradePlatform is ReentrancyGuard {
             tokens = INITIAL_TOKEN_AMOUNT;
         } else {
             tokenPrice = (tokenPrice * 103) / 100 + 4 * 10**12;
-            // TODO: if tradeStock is equal to zero call the startTradeRound
+            // TODO: tradeStock is equal to zero then call the startTradeRound
             tokens = tradeStock / tokenPrice;
         }
         TradeToken(token).mint(address(this), tokens);
@@ -107,7 +100,7 @@ contract TradePlatform is ReentrancyGuard {
         );
         if (block.timestamp <= endsAt && tokens != 0) {
             revert NotExpiredTimeError(
-                "Platform: time of last round is not over"
+                "Platform: time of the last round is not over"
             );
         }
 
@@ -131,24 +124,12 @@ contract TradePlatform is ReentrancyGuard {
         );
         // TODO: Do i need this checking?
         require(roundStatus == RoundStatus.SALE, "Platform: only sale round");
-        if (msg.value / tokenPrice >= _amount) {
+        if (msg.value / tokenPrice > _amount) {
             msg.sender.call{value: msg.value - tokenPrice * _amount}("");
         }
         // TODO: I need to create a referal programm
         IERC20(token).safeTransfer(msg.sender, _amount);
-        if (
-            !users[msg.sender].isReferer &&
-            users[msg.sender].amountOfTokens == 0
-        ) {
-            // If user buyes tokens for the first time
-            users[msg.sender] = User({
-                amountOfTokens: _amount,
-                referer: address(0),
-                isReferer: false
-            });
-        } else {
-            users[msg.sender].amountOfTokens += _amount;
-        }
+        users[msg.sender].amountOfTokens += _amount;
         tokens -= _amount;
         if (tokens == 0) {
             address(this).call(abi.encodeWithSignature("startTradeRound()"));

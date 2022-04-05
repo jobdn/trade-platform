@@ -2,7 +2,7 @@
 
 ## First of all
 
-You need to call the `startSaleRound` function
+You need to call the `startSaleRound` function to start sale round
 
 ```shell
 npx hardhat accounts

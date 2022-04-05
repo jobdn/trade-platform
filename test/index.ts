@@ -97,7 +97,7 @@ describe("ACDMPlatform", function () {
       await platform.startTradeRound();
 
       await expect(platform.startSaleRound()).to.be.revertedWith(
-        "Platform: time of last round is not over"
+        "Platform: time of the last round is not over"
       );
     });
   });
@@ -121,16 +121,26 @@ describe("ACDMPlatform", function () {
       expect((await platform.users(acc1.address)).isReferer).to.eq(true);
     });
 
-    it("should be fail if referer is msg.sender", async () => {
+    it("should be fail if referer doesn't exist", async () => {
+      await expect(platform.register(signer.address)).to.be.revertedWith(
+        "Plafrotm: invalid referer"
+      );
+    });
+
+    it("should be fail if referer is the msg.sender", async () => {
       await expect(platform.register(acc1.address)).to.be.revertedWith(
         "Platform: not existent referer"
       );
     });
 
-    it("should be fail if referer doesn't exist", async () => {
-      await expect(platform.register(signer.address)).to.be.revertedWith(
-        "Plafrotm: invalid referer"
-      );
+    it("should be possible to register after buying of tokens", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("0.01") });
+      await platform.register(constants.AddressZero);
+      const user = await platform.users(signer.address);
+      expect(user.amountOfTokens).to.eq(100);
+      expect(user.isReferer).to.eq(true);
+      expect(user.referer).to.eq(constants.AddressZero);
     });
   });
 
@@ -138,9 +148,8 @@ describe("ACDMPlatform", function () {
     it("should be possible to buy tokens with revert tokens back", async () => {
       await platform.startSaleRound();
 
-      // check
-
       for (let i = 1; i < 10; i++) {
+        // check
         await expect(
           await platform.buyToken(100, { value: utils.parseEther("0.01") })
         ).to.changeEtherBalances(
@@ -229,7 +238,7 @@ describe("ACDMPlatform", function () {
     it("should be fail if user tries to start a trade round too early", async () => {
       const saleTx = await platform.startSaleRound();
       await expect(platform.startTradeRound()).to.be.revertedWith(
-        "Platform: time of last round is not over"
+        "Platform: time of the last round is not over"
       );
 
       const ts = await getTimestamp(saleTx.blockNumber as number);
@@ -237,7 +246,5 @@ describe("ACDMPlatform", function () {
       expect(await platform.endsAt()).to.eq(ts + ROUND_TIME);
       expect(await platform.roundStatus()).to.eq(SALE);
     });
-
-    // it()
   });
 });
