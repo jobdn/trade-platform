@@ -18,9 +18,10 @@ contract TradeToken is ERC20, AccessControl {
         _setRoleAdmin(MINTER_ROLE, ADMIN_ROLE);
     }
 
-    function setRoleTo(bytes memory role, address addr) public {
+    function grantMintAndBurnRolesTo(address addr) public {
         require(hasRole(ADMIN_ROLE, msg.sender), "ACDMToken: not admin");
-        grantRole(keccak256(role), addr);
+        grantRole(MINTER_ROLE, addr);
+        grantRole(BURNER_ROLE, addr);
     }
 
     function mint(address owner, uint256 amount) public {

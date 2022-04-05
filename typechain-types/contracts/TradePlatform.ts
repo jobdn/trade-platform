@@ -4,6 +4,7 @@
 import type {
   BaseContract,
   BigNumber,
+  BigNumberish,
   BytesLike,
   CallOverrides,
   ContractTransaction,
@@ -26,7 +27,7 @@ export interface TradePlatformInterface extends utils.Interface {
   functions: {
     "INITIAL_TOKEN_AMOUNT()": FunctionFragment;
     "_balances(address)": FunctionFragment;
-    "buyACDM()": FunctionFragment;
+    "buyToken(uint256)": FunctionFragment;
     "endsAt()": FunctionFragment;
     "register(address)": FunctionFragment;
     "roundStatus()": FunctionFragment;
@@ -45,7 +46,7 @@ export interface TradePlatformInterface extends utils.Interface {
     nameOrSignatureOrTopic:
       | "INITIAL_TOKEN_AMOUNT"
       | "_balances"
-      | "buyACDM"
+      | "buyToken"
       | "endsAt"
       | "register"
       | "roundStatus"
@@ -65,7 +66,10 @@ export interface TradePlatformInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "_balances", values: [string]): string;
-  encodeFunctionData(functionFragment: "buyACDM", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "buyToken",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(functionFragment: "endsAt", values?: undefined): string;
   encodeFunctionData(functionFragment: "register", values: [string]): string;
   encodeFunctionData(
@@ -99,7 +103,7 @@ export interface TradePlatformInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "_balances", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "buyACDM", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "buyToken", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "endsAt", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "register", data: BytesLike): Result;
   decodeFunctionResult(
@@ -156,7 +160,8 @@ export interface TradePlatform extends BaseContract {
 
     _balances(arg0: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    buyACDM(
+    buyToken(
+      _amount: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -193,11 +198,10 @@ export interface TradePlatform extends BaseContract {
       arg0: string,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, string, boolean, boolean] & {
-        amountOfACDM: BigNumber;
+      [BigNumber, string, boolean] & {
+        amountOfTokens: BigNumber;
         referer: string;
         isReferer: boolean;
-        isExists: boolean;
       }
     >;
   };
@@ -206,7 +210,8 @@ export interface TradePlatform extends BaseContract {
 
   _balances(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-  buyACDM(
+  buyToken(
+    _amount: BigNumberish,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -243,11 +248,10 @@ export interface TradePlatform extends BaseContract {
     arg0: string,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, string, boolean, boolean] & {
-      amountOfACDM: BigNumber;
+    [BigNumber, string, boolean] & {
+      amountOfTokens: BigNumber;
       referer: string;
       isReferer: boolean;
-      isExists: boolean;
     }
   >;
 
@@ -256,7 +260,7 @@ export interface TradePlatform extends BaseContract {
 
     _balances(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    buyACDM(overrides?: CallOverrides): Promise<void>;
+    buyToken(_amount: BigNumberish, overrides?: CallOverrides): Promise<void>;
 
     endsAt(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -284,11 +288,10 @@ export interface TradePlatform extends BaseContract {
       arg0: string,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, string, boolean, boolean] & {
-        amountOfACDM: BigNumber;
+      [BigNumber, string, boolean] & {
+        amountOfTokens: BigNumber;
         referer: string;
         isReferer: boolean;
-        isExists: boolean;
       }
     >;
   };
@@ -300,7 +303,8 @@ export interface TradePlatform extends BaseContract {
 
     _balances(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    buyACDM(
+    buyToken(
+      _amount: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -346,7 +350,8 @@ export interface TradePlatform extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    buyACDM(
+    buyToken(
+      _amount: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

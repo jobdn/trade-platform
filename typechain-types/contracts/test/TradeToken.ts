@@ -39,6 +39,7 @@ export interface TradeTokenInterface extends utils.Interface {
     "decimals()": FunctionFragment;
     "decreaseAllowance(address,uint256)": FunctionFragment;
     "getRoleAdmin(bytes32)": FunctionFragment;
+    "grantMintAndBurnRolesTo(address)": FunctionFragment;
     "grantRole(bytes32,address)": FunctionFragment;
     "hasRole(bytes32,address)": FunctionFragment;
     "increaseAllowance(address,uint256)": FunctionFragment;
@@ -46,7 +47,6 @@ export interface TradeTokenInterface extends utils.Interface {
     "name()": FunctionFragment;
     "renounceRole(bytes32,address)": FunctionFragment;
     "revokeRole(bytes32,address)": FunctionFragment;
-    "setRoleTo(bytes,address)": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "symbol()": FunctionFragment;
     "totalSupply()": FunctionFragment;
@@ -67,6 +67,7 @@ export interface TradeTokenInterface extends utils.Interface {
       | "decimals"
       | "decreaseAllowance"
       | "getRoleAdmin"
+      | "grantMintAndBurnRolesTo"
       | "grantRole"
       | "hasRole"
       | "increaseAllowance"
@@ -74,7 +75,6 @@ export interface TradeTokenInterface extends utils.Interface {
       | "name"
       | "renounceRole"
       | "revokeRole"
-      | "setRoleTo"
       | "supportsInterface"
       | "symbol"
       | "totalSupply"
@@ -121,6 +121,10 @@ export interface TradeTokenInterface extends utils.Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "grantMintAndBurnRolesTo",
+    values: [string]
+  ): string;
+  encodeFunctionData(
     functionFragment: "grantRole",
     values: [BytesLike, string]
   ): string;
@@ -143,10 +147,6 @@ export interface TradeTokenInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "revokeRole",
-    values: [BytesLike, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setRoleTo",
     values: [BytesLike, string]
   ): string;
   encodeFunctionData(
@@ -193,6 +193,10 @@ export interface TradeTokenInterface extends utils.Interface {
     functionFragment: "getRoleAdmin",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "grantMintAndBurnRolesTo",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "hasRole", data: BytesLike): Result;
   decodeFunctionResult(
@@ -206,7 +210,6 @@ export interface TradeTokenInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "revokeRole", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "setRoleTo", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "supportsInterface",
     data: BytesLike
@@ -363,6 +366,11 @@ export interface TradeToken extends BaseContract {
 
     getRoleAdmin(role: BytesLike, overrides?: CallOverrides): Promise<[string]>;
 
+    grantMintAndBurnRolesTo(
+      addr: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     grantRole(
       role: BytesLike,
       account: string,
@@ -398,12 +406,6 @@ export interface TradeToken extends BaseContract {
     revokeRole(
       role: BytesLike,
       account: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    setRoleTo(
-      role: BytesLike,
-      addr: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -468,6 +470,11 @@ export interface TradeToken extends BaseContract {
 
   getRoleAdmin(role: BytesLike, overrides?: CallOverrides): Promise<string>;
 
+  grantMintAndBurnRolesTo(
+    addr: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   grantRole(
     role: BytesLike,
     account: string,
@@ -503,12 +510,6 @@ export interface TradeToken extends BaseContract {
   revokeRole(
     role: BytesLike,
     account: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  setRoleTo(
-    role: BytesLike,
-    addr: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -573,6 +574,11 @@ export interface TradeToken extends BaseContract {
 
     getRoleAdmin(role: BytesLike, overrides?: CallOverrides): Promise<string>;
 
+    grantMintAndBurnRolesTo(
+      addr: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     grantRole(
       role: BytesLike,
       account: string,
@@ -608,12 +614,6 @@ export interface TradeToken extends BaseContract {
     revokeRole(
       role: BytesLike,
       account: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    setRoleTo(
-      role: BytesLike,
-      addr: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -739,6 +739,11 @@ export interface TradeToken extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    grantMintAndBurnRolesTo(
+      addr: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     grantRole(
       role: BytesLike,
       account: string,
@@ -774,12 +779,6 @@ export interface TradeToken extends BaseContract {
     revokeRole(
       role: BytesLike,
       account: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    setRoleTo(
-      role: BytesLike,
-      addr: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -853,6 +852,11 @@ export interface TradeToken extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    grantMintAndBurnRolesTo(
+      addr: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     grantRole(
       role: BytesLike,
       account: string,
@@ -888,12 +892,6 @@ export interface TradeToken extends BaseContract {
     revokeRole(
       role: BytesLike,
       account: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    setRoleTo(
-      role: BytesLike,
-      addr: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
