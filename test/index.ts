@@ -12,6 +12,7 @@ import {
 describe("ACDMPlatform", function () {
   let signer: SignerWithAddress;
   let acc1: SignerWithAddress;
+  let acc2: SignerWithAddress;
   let platform: TradePlatform;
   let token: TradeToken;
   const ROUND_TIME = 60;
@@ -21,7 +22,7 @@ describe("ACDMPlatform", function () {
   const INITIAL_PRICE: BigNumber = utils.parseEther("0.00001");
 
   beforeEach(async () => {
-    [signer, acc1] = await ethers.getSigners();
+    [signer, acc1, acc2] = await ethers.getSigners();
     token = await new TradeToken__factory(signer).deploy("TRADE TOKEN", "TTKN");
     platform = await new TradePlatform__factory(signer).deploy(
       token.address,
@@ -106,6 +107,7 @@ describe("ACDMPlatform", function () {
     it("should be possible to register user", async () => {
       const signers = await ethers.getSigners();
       for (let i = 2; i < 10; i++) {
+        // Initial referer
         await platform.connect(signers[i]).register(constants.AddressZero);
         const user = await platform.users(signers[i].address);
         expect(user.amountOfTokens).to.eq(0);
@@ -183,6 +185,44 @@ describe("ACDMPlatform", function () {
       );
       expect(await platform.tokens()).to.eq(0);
       expect(await platform.roundStatus()).to.eq(TRADE);
+    });
+
+    it("should be possible to buy tokens and send fee to referers", async () => {
+      await platform.startSaleRound();
+      await platform.register(constants.AddressZero);
+      await platform.connect(acc1).register(signer.address);
+      await platform.connect(acc2).register(acc1.address);
+
+      const SPENDED_ETH = utils.parseEther("0.001");
+      const FIRST_REFERER_FEE = utils.parseEther(`${0.001 * 0.05}`);
+      const SECOND_REFERER_FEE = utils.parseEther(`${0.001 * 0.03}`);
+      const PLATFORM_FEE_WITH_ONE_REFERER = utils.parseEther(`${0.001 * 0.95}`);
+      const PLATFORM_FEE_WITH_TWO_REFERER = utils.parseEther(`${0.001 * 0.92}`);
+
+      // one referer
+      await expect(
+        await platform
+          .connect(acc1)
+          .buyToken(100, { value: utils.parseEther("0.01") })
+      ).to.changeEtherBalances(
+        [acc1, signer, platform],
+        [-SPENDED_ETH, FIRST_REFERER_FEE, PLATFORM_FEE_WITH_ONE_REFERER]
+      );
+
+      // two referer
+      await expect(
+        await platform
+          .connect(acc2)
+          .buyToken(100, { value: utils.parseEther("0.01") })
+      ).to.changeEtherBalances(
+        [acc2, acc1, signer, platform],
+        [
+          -SPENDED_ETH,
+          FIRST_REFERER_FEE,
+          SECOND_REFERER_FEE,
+          PLATFORM_FEE_WITH_TWO_REFERER,
+        ]
+      );
     });
 
     it("should be fail if not enough tokens on the plaftorm", async () => {

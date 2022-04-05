@@ -125,9 +125,23 @@ contract TradePlatform is ReentrancyGuard {
         // TODO: Do i need this checking?
         require(roundStatus == RoundStatus.SALE, "Platform: only sale round");
         if (msg.value / tokenPrice > _amount) {
-            msg.sender.call{value: msg.value - tokenPrice * _amount}("");
+            msg.sender.call{value: msg.value - tokenPrice * _amount}(
+                "You sent more than need ETH"
+            );
         }
         // TODO: I need to create a referal programm
+        if (users[msg.sender].referer != address(0)) {
+            if (users[users[msg.sender].referer].referer != address(0)) {
+                uint256 SECOND_REFERER_FEE = 3;
+                users[users[msg.sender].referer].referer.call{
+                    value: (_amount * tokenPrice * SECOND_REFERER_FEE) / 100
+                }("Percentage of first referer");
+            }
+            uint256 FIRST_REFERER_FEE = 5;
+            users[msg.sender].referer.call{
+                value: (_amount * tokenPrice * FIRST_REFERER_FEE) / 100
+            }("Percentage of second referer");
+        }
         IERC20(token).safeTransfer(msg.sender, _amount);
         users[msg.sender].amountOfTokens += _amount;
         tokens -= _amount;
