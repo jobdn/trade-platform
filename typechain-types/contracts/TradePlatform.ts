@@ -28,13 +28,13 @@ export interface TradePlatformInterface extends utils.Interface {
     "INITIAL_TOKEN_AMOUNT()": FunctionFragment;
     "_balances(address)": FunctionFragment;
     "buyToken(uint256)": FunctionFragment;
-    "endsAt()": FunctionFragment;
     "register(address)": FunctionFragment;
+    "roundEndTime()": FunctionFragment;
+    "roundStartTime()": FunctionFragment;
     "roundStatus()": FunctionFragment;
     "roundTime()": FunctionFragment;
     "startSaleRound()": FunctionFragment;
     "startTradeRound()": FunctionFragment;
-    "startsAt()": FunctionFragment;
     "token()": FunctionFragment;
     "tokenPrice()": FunctionFragment;
     "tokens()": FunctionFragment;
@@ -47,13 +47,13 @@ export interface TradePlatformInterface extends utils.Interface {
       | "INITIAL_TOKEN_AMOUNT"
       | "_balances"
       | "buyToken"
-      | "endsAt"
       | "register"
+      | "roundEndTime"
+      | "roundStartTime"
       | "roundStatus"
       | "roundTime"
       | "startSaleRound"
       | "startTradeRound"
-      | "startsAt"
       | "token"
       | "tokenPrice"
       | "tokens"
@@ -70,8 +70,15 @@ export interface TradePlatformInterface extends utils.Interface {
     functionFragment: "buyToken",
     values: [BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "endsAt", values?: undefined): string;
   encodeFunctionData(functionFragment: "register", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "roundEndTime",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "roundStartTime",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "roundStatus",
     values?: undefined
@@ -85,7 +92,6 @@ export interface TradePlatformInterface extends utils.Interface {
     functionFragment: "startTradeRound",
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "startsAt", values?: undefined): string;
   encodeFunctionData(functionFragment: "token", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "tokenPrice",
@@ -104,8 +110,15 @@ export interface TradePlatformInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "_balances", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "buyToken", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "endsAt", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "register", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "roundEndTime",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "roundStartTime",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "roundStatus",
     data: BytesLike
@@ -119,7 +132,6 @@ export interface TradePlatformInterface extends utils.Interface {
     functionFragment: "startTradeRound",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "startsAt", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "token", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tokenPrice", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tokens", data: BytesLike): Result;
@@ -165,12 +177,14 @@ export interface TradePlatform extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    endsAt(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     register(
       _referer: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    roundEndTime(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    roundStartTime(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     roundStatus(overrides?: CallOverrides): Promise<[number]>;
 
@@ -183,8 +197,6 @@ export interface TradePlatform extends BaseContract {
     startTradeRound(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
-
-    startsAt(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     token(overrides?: CallOverrides): Promise<[string]>;
 
@@ -215,12 +227,14 @@ export interface TradePlatform extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  endsAt(overrides?: CallOverrides): Promise<BigNumber>;
-
   register(
     _referer: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  roundEndTime(overrides?: CallOverrides): Promise<BigNumber>;
+
+  roundStartTime(overrides?: CallOverrides): Promise<BigNumber>;
 
   roundStatus(overrides?: CallOverrides): Promise<number>;
 
@@ -233,8 +247,6 @@ export interface TradePlatform extends BaseContract {
   startTradeRound(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  startsAt(overrides?: CallOverrides): Promise<BigNumber>;
 
   token(overrides?: CallOverrides): Promise<string>;
 
@@ -262,9 +274,11 @@ export interface TradePlatform extends BaseContract {
 
     buyToken(_amount: BigNumberish, overrides?: CallOverrides): Promise<void>;
 
-    endsAt(overrides?: CallOverrides): Promise<BigNumber>;
-
     register(_referer: string, overrides?: CallOverrides): Promise<void>;
+
+    roundEndTime(overrides?: CallOverrides): Promise<BigNumber>;
+
+    roundStartTime(overrides?: CallOverrides): Promise<BigNumber>;
 
     roundStatus(overrides?: CallOverrides): Promise<number>;
 
@@ -273,8 +287,6 @@ export interface TradePlatform extends BaseContract {
     startSaleRound(overrides?: CallOverrides): Promise<void>;
 
     startTradeRound(overrides?: CallOverrides): Promise<void>;
-
-    startsAt(overrides?: CallOverrides): Promise<BigNumber>;
 
     token(overrides?: CallOverrides): Promise<string>;
 
@@ -308,12 +320,14 @@ export interface TradePlatform extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    endsAt(overrides?: CallOverrides): Promise<BigNumber>;
-
     register(
       _referer: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    roundEndTime(overrides?: CallOverrides): Promise<BigNumber>;
+
+    roundStartTime(overrides?: CallOverrides): Promise<BigNumber>;
 
     roundStatus(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -326,8 +340,6 @@ export interface TradePlatform extends BaseContract {
     startTradeRound(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    startsAt(overrides?: CallOverrides): Promise<BigNumber>;
 
     token(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -355,12 +367,14 @@ export interface TradePlatform extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    endsAt(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     register(
       _referer: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    roundEndTime(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    roundStartTime(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     roundStatus(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -373,8 +387,6 @@ export interface TradePlatform extends BaseContract {
     startTradeRound(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
-
-    startsAt(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     token(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 

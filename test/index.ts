@@ -63,12 +63,13 @@ describe("ACDMPlatform", function () {
     it("should start sale round", async () => {
       // first sale round
       const saleTx = await platform.startSaleRound();
-      expect(await platform.roundStatus()).to.eq(SALE);
       expect(await platform.tokenPrice()).to.eq(INITIAL_PRICE);
       expect(await platform.tokens()).to.eq(INITIAL_TOKEN_AMOUNT);
+      expect(await platform.roundStatus()).to.eq(SALE);
+
       const ts = await getTimestamp(saleTx.blockNumber as number);
-      expect(await platform.startsAt()).to.eq(ts);
-      expect(await platform.endsAt()).to.eq(ts + ROUND_TIME);
+      expect(await platform.roundStartTime()).to.eq(ts);
+      expect(await platform.roundEndTime()).to.eq(ts + ROUND_TIME);
       expect(await token.balanceOf(platform.address)).to.eq(
         INITIAL_TOKEN_AMOUNT
       );
@@ -81,6 +82,7 @@ describe("ACDMPlatform", function () {
       // second sale round
       await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
       await platform.startSaleRound();
+      // TODO: check tokens in the second sale round
       expect(await platform.tokenPrice()).to.eq(utils.parseEther("0.0000143"));
       expect(await platform.tokens()).to.eq(0);
     });
@@ -264,8 +266,8 @@ describe("ACDMPlatform", function () {
       const tx = await platform.startTradeRound();
       const ts = await getTimestamp(tx.blockNumber as number);
 
-      expect(await platform.startsAt()).to.eq(ts);
-      expect(await platform.endsAt()).to.eq(ts + ROUND_TIME);
+      expect(await platform.roundStartTime()).to.eq(ts);
+      expect(await platform.roundEndTime()).to.eq(ts + ROUND_TIME);
       expect(await platform.roundStatus()).to.eq(TRADE);
       expect(await token.balanceOf(platform.address)).to.eq(0);
     });
@@ -283,8 +285,8 @@ describe("ACDMPlatform", function () {
       );
 
       const ts = await getTimestamp(saleTx.blockNumber as number);
-      expect(await platform.startsAt()).to.eq(ts);
-      expect(await platform.endsAt()).to.eq(ts + ROUND_TIME);
+      expect(await platform.roundStartTime()).to.eq(ts);
+      expect(await platform.roundEndTime()).to.eq(ts + ROUND_TIME);
       expect(await platform.roundStatus()).to.eq(SALE);
     });
   });

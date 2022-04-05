@@ -16,8 +16,8 @@ contract TradePlatform is ReentrancyGuard {
     address public token;
 
     uint256 public tradeStock;
-    uint256 public startsAt;
-    uint256 public endsAt;
+    uint256 public roundStartTime;
+    uint256 public roundEndTime;
     uint256 public tokenPrice;
     uint256 public tokens;
     RoundStatus public roundStatus;
@@ -37,7 +37,7 @@ contract TradePlatform is ReentrancyGuard {
 
     struct Order {
         uint256 tokensAmount;
-        uint256 currentPrice;
+        uint256 price;
         address seller;
         bool closed;
     }
@@ -77,7 +77,7 @@ contract TradePlatform is ReentrancyGuard {
             "Platform: trade round is not over"
         );
         require(
-            block.timestamp > endsAt,
+            block.timestamp > roundEndTime,
             "Platform: time of the last round is not over"
         );
 
@@ -91,8 +91,8 @@ contract TradePlatform is ReentrancyGuard {
             tokens = tradeStock / tokenPrice;
         }
         TradeToken(token).mint(address(this), tokens);
-        startsAt = block.timestamp;
-        endsAt = startsAt + roundTime;
+        roundStartTime = block.timestamp;
+        roundEndTime = roundStartTime + roundTime;
         roundStatus = RoundStatus.SALE;
     }
 
@@ -105,15 +105,15 @@ contract TradePlatform is ReentrancyGuard {
             "Platform: sale round is not over"
         );
         // TODO: Can I implement this using require?
-        if (block.timestamp <= endsAt && tokens != 0) {
+        if (block.timestamp <= roundEndTime && tokens != 0) {
             revert NotExpiredTimeError(
                 "Platform: time of the last round is not over"
             );
         }
 
         TradeToken(token).burn(address(this), tokens);
-        startsAt = block.timestamp;
-        endsAt = startsAt + roundTime;
+        roundStartTime = block.timestamp;
+        roundEndTime = roundStartTime + roundTime;
         roundStatus = RoundStatus.TRADE;
     }
 
@@ -131,7 +131,6 @@ contract TradePlatform is ReentrancyGuard {
             msg.value / tokenPrice >= _amount,
             "Platform: not enough msg.value"
         );
-        // TODO: Do i need this checking?
         require(roundStatus == RoundStatus.SALE, "Platform: only sale round");
 
         uint256 refund = msg.value - tokenPrice * _amount;
@@ -146,12 +145,12 @@ contract TradePlatform is ReentrancyGuard {
                 uint256 SECOND_REFERER_FEE = 3;
                 secondReferer.call{
                     value: (_amount * tokenPrice * SECOND_REFERER_FEE) / 100
-                }("Percentage of first referer");
+                }("Percentage of second referer");
             }
             uint256 FIRST_REFERER_FEE = 5;
             firstReferer.call{
                 value: (_amount * tokenPrice * FIRST_REFERER_FEE) / 100
-            }("Percentage of second referer");
+            }("Percentage of first referer");
         }
         IERC20(token).safeTransfer(msg.sender, _amount);
         users[msg.sender].amountOfTokens += _amount;
