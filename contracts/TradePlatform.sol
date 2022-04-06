@@ -29,13 +29,12 @@ contract TradePlatform is ReentrancyGuard {
     }
 
     struct User {
-        uint256 amountOfTokens;
         address referer;
         bool isReferer;
     }
 
     struct Order {
-        uint256 tokensAmount;
+        uint256 tokensInOrder;
         uint256 price;
         address seller;
         bool closed;
@@ -159,8 +158,8 @@ contract TradePlatform is ReentrancyGuard {
                 value: (_amount * tokenPrice * FIRST_REFERER_FEE) / 100
             }("Percentage of first referer");
         }
+
         IERC20(token).safeTransfer(msg.sender, _amount);
-        users[msg.sender].amountOfTokens += _amount;
         tokens -= _amount;
         if (tokens == 0) {
             (bool success, ) = address(this).call(
@@ -170,48 +169,50 @@ contract TradePlatform is ReentrancyGuard {
         }
     }
 
+    modifier onlyTradeRound() {
+        require(
+            roundStatus == RoundStatus.TRADE,
+            "Platform: only trade round function"
+        );
+        _;
+    }
+
     /**  @notice Adds orders
      * @dev To add order user needs to buy tokens in sale round
      * @param _amount Amount of tokens for trade rount
      * @param  _price Price for amount of tokens
      */
-    function addOrder(uint256 _amount, uint256 _price) public {
-        require(
-            _amount != 0 && users[msg.sender].amountOfTokens >= _amount,
-            "Platform: zero funds"
-        );
-        require(
-            roundStatus == RoundStatus.TRADE,
-            "Platform: only trade round function"
-        );
+    function addOrder(uint256 _amount, uint256 _price) public onlyTradeRound {
+        require(_amount != 0, "Platform: zero funds");
+        IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
         orders.push(
             Order({
-                tokensAmount: _amount,
+                tokensInOrder: _amount,
                 price: _price,
                 seller: msg.sender,
                 closed: false
             })
         );
-        IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
     }
 
+    /// @notice Redeems _amount tokens from the order by id
+    /// @dev When user redeems some tokens from the order he receives 95% of entire price of the order
+    /// @param _id Order id
+    /// @param _amount Amount of buyed tokens from the order
     function redeemOrder(uint256 _id, uint256 _amount)
         public
         payable
         nonReentrant
+        onlyTradeRound
     {
         require(_id < orders.length, "Platform: invalid order");
         require(!orders[_id].closed, "Platform: closed order");
         require(
-            _amount <= orders[_id].tokensAmount,
+            _amount <= orders[_id].tokensInOrder,
             "Platform: invalid _amount"
         );
-        require(
-            roundStatus == RoundStatus.TRADE,
-            "Platform: only trade round function"
-        );
 
-        uint256 spendedETH = (orders[_id].price / orders[_id].tokensAmount) *
+        uint256 spendedETH = (orders[_id].price / orders[_id].tokensInOrder) *
             _amount;
         require(msg.value >= spendedETH, "Platform: not enough funds");
         uint256 refund = msg.value - spendedETH;
@@ -242,11 +243,19 @@ contract TradePlatform is ReentrancyGuard {
 
         IERC20(token).safeTransfer(msg.sender, _amount);
 
-        orders[_id].tokensAmount -= _amount;
+        orders[_id].tokensInOrder -= _amount;
         tradeStock += spendedETH;
         orders[_id].price -= spendedETH;
-        if (orders[_id].tokensAmount == 0) {
+        if (orders[_id].tokensInOrder == 0) {
             orders[_id].closed = true;
         }
+    }
+
+    function removeOrder(uint256 _id) public nonReentrant onlyTradeRound {
+        require(_id < orders.length, "Platform: invalid order");
+        require(msg.sender == orders[_id].seller, "Platform: not seller");
+        require(!orders[_id].closed, "Platform: closed order");
+        orders[_id].closed = true;
+        IERC20(token).transfer(msg.sender, orders[_id].tokensInOrder);
     }
 }

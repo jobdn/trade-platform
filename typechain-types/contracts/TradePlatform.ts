@@ -32,6 +32,7 @@ export interface TradePlatformInterface extends utils.Interface {
     "orders(uint256)": FunctionFragment;
     "redeemOrder(uint256,uint256)": FunctionFragment;
     "register(address)": FunctionFragment;
+    "removeOrder(uint256)": FunctionFragment;
     "roundEndTime()": FunctionFragment;
     "roundStartTime()": FunctionFragment;
     "roundStatus()": FunctionFragment;
@@ -54,6 +55,7 @@ export interface TradePlatformInterface extends utils.Interface {
       | "orders"
       | "redeemOrder"
       | "register"
+      | "removeOrder"
       | "roundEndTime"
       | "roundStartTime"
       | "roundStatus"
@@ -89,6 +91,10 @@ export interface TradePlatformInterface extends utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "register", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "removeOrder",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "roundEndTime",
     values?: undefined
@@ -135,6 +141,10 @@ export interface TradePlatformInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "register", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "removeOrder",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "roundEndTime",
     data: BytesLike
@@ -212,7 +222,7 @@ export interface TradePlatform extends BaseContract {
       overrides?: CallOverrides
     ): Promise<
       [BigNumber, BigNumber, string, boolean] & {
-        tokensAmount: BigNumber;
+        tokensInOrder: BigNumber;
         price: BigNumber;
         seller: string;
         closed: boolean;
@@ -227,6 +237,11 @@ export interface TradePlatform extends BaseContract {
 
     register(
       _referer: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    removeOrder(
+      _id: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -257,13 +272,7 @@ export interface TradePlatform extends BaseContract {
     users(
       arg0: string,
       overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, string, boolean] & {
-        amountOfTokens: BigNumber;
-        referer: string;
-        isReferer: boolean;
-      }
-    >;
+    ): Promise<[string, boolean] & { referer: string; isReferer: boolean }>;
   };
 
   INITIAL_TOKEN_AMOUNT(overrides?: CallOverrides): Promise<BigNumber>;
@@ -286,7 +295,7 @@ export interface TradePlatform extends BaseContract {
     overrides?: CallOverrides
   ): Promise<
     [BigNumber, BigNumber, string, boolean] & {
-      tokensAmount: BigNumber;
+      tokensInOrder: BigNumber;
       price: BigNumber;
       seller: string;
       closed: boolean;
@@ -301,6 +310,11 @@ export interface TradePlatform extends BaseContract {
 
   register(
     _referer: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  removeOrder(
+    _id: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -331,13 +345,7 @@ export interface TradePlatform extends BaseContract {
   users(
     arg0: string,
     overrides?: CallOverrides
-  ): Promise<
-    [BigNumber, string, boolean] & {
-      amountOfTokens: BigNumber;
-      referer: string;
-      isReferer: boolean;
-    }
-  >;
+  ): Promise<[string, boolean] & { referer: string; isReferer: boolean }>;
 
   callStatic: {
     INITIAL_TOKEN_AMOUNT(overrides?: CallOverrides): Promise<BigNumber>;
@@ -357,7 +365,7 @@ export interface TradePlatform extends BaseContract {
       overrides?: CallOverrides
     ): Promise<
       [BigNumber, BigNumber, string, boolean] & {
-        tokensAmount: BigNumber;
+        tokensInOrder: BigNumber;
         price: BigNumber;
         seller: string;
         closed: boolean;
@@ -371,6 +379,8 @@ export interface TradePlatform extends BaseContract {
     ): Promise<void>;
 
     register(_referer: string, overrides?: CallOverrides): Promise<void>;
+
+    removeOrder(_id: BigNumberish, overrides?: CallOverrides): Promise<void>;
 
     roundEndTime(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -395,13 +405,7 @@ export interface TradePlatform extends BaseContract {
     users(
       arg0: string,
       overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, string, boolean] & {
-        amountOfTokens: BigNumber;
-        referer: string;
-        isReferer: boolean;
-      }
-    >;
+    ): Promise<[string, boolean] & { referer: string; isReferer: boolean }>;
   };
 
   filters: {};
@@ -432,6 +436,11 @@ export interface TradePlatform extends BaseContract {
 
     register(
       _referer: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    removeOrder(
+      _id: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -496,6 +505,11 @@ export interface TradePlatform extends BaseContract {
 
     register(
       _referer: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    removeOrder(
+      _id: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

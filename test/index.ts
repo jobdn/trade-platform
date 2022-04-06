@@ -122,25 +122,20 @@ describe("ACDMPlatform", function () {
 
   describe("register", () => {
     it("should be possible to register user", async () => {
-      const signers = await ethers.getSigners();
-      for (let i = 2; i < 5; i++) {
-        // Initial referer
-        await platform.connect(signers[i]).register(constants.AddressZero);
-        const user = await platform.users(signers[i].address);
-        expect(user.amountOfTokens).to.eq(0);
-        expect(user.isReferer).to.eq(true);
-        expect(user.referer).to.eq(constants.AddressZero);
+      // Initial referer
+      await platform.register(constants.AddressZero);
+      const user = await platform.users(signer.address);
+      expect(user.isReferer).to.eq(true);
+      expect(user.referer).to.eq(constants.AddressZero);
 
-        // Second user with
-        await platform.connect(acc1).register(signers[i].address);
-        const acc1User = await platform.users(acc1.address);
-        expect(acc1User.referer).to.eq(signers[i].address);
-      }
-      expect((await platform.users(acc1.address)).amountOfTokens).to.eq(0);
-      expect((await platform.users(acc1.address)).isReferer).to.eq(true);
+      // Second user with
+      await platform.connect(acc1).register(signer.address);
+      const acc1User = await platform.users(acc1.address);
+      expect(acc1User.referer).to.eq(signer.address);
+      expect(acc1User.isReferer).to.eq(true);
     });
 
-    it("should be fail if invalid", async () => {
+    it("should be fail if invalid referer", async () => {
       await expect(platform.register(signer.address)).to.be.revertedWith(
         "Plafrotm: invalid referer"
       );
@@ -163,7 +158,6 @@ describe("ACDMPlatform", function () {
       await platform.buyToken(100, { value: utils.parseEther("0.01") });
       await platform.register(constants.AddressZero);
       const user = await platform.users(signer.address);
-      expect(user.amountOfTokens).to.eq(100);
       expect(user.isReferer).to.eq(true);
       expect(user.referer).to.eq(constants.AddressZero);
     });
@@ -180,9 +174,6 @@ describe("ACDMPlatform", function () {
         ).to.changeEtherBalances(
           [signer, platform],
           [utils.parseEther(`-0.001`), utils.parseEther(`0.001`)]
-        );
-        expect((await platform.users(signer.address)).amountOfTokens).to.eq(
-          i * 100
         );
         expect(await platform.tokens()).to.eq(INITIAL_TOKEN_AMOUNT - i * 100);
         expect(await token.balanceOf(signer.address)).to.eq(i * 100);
@@ -323,7 +314,7 @@ describe("ACDMPlatform", function () {
 
       // check
       const firstOrder = await platform.orders(0);
-      expect(firstOrder.tokensAmount).to.eq(100);
+      expect(firstOrder.tokensInOrder).to.eq(100);
       expect(firstOrder.price).to.eq(utils.parseEther("0.02"));
       expect(firstOrder.seller).to.eq(signer.address);
       expect(firstOrder.closed).to.eq(false);
@@ -335,6 +326,13 @@ describe("ACDMPlatform", function () {
       await expect(
         platform.addOrder(0, utils.parseEther("0.02"))
       ).to.be.revertedWith("Platform: zero funds");
+    });
+
+    it("should be fail if user doesn't have enough tokens", async () => {
+      await token.approve(platform.address, 1000);
+      await expect(
+        platform.addOrder(1000, utils.parseEther("0.02"))
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
 
     it("should be fail if sale round", async () => {
@@ -392,7 +390,7 @@ describe("ACDMPlatform", function () {
       );
       const signerOrder = await platform.orders(0);
       expect(signerOrder.closed).to.eq(true);
-      expect(signerOrder.tokensAmount).to.eq(0);
+      expect(signerOrder.tokensInOrder).to.eq(0);
       expect(signerOrder.price).to.eq(utils.parseEther("0"));
 
       // acc3 redeems the half order of acc1
@@ -416,7 +414,7 @@ describe("ACDMPlatform", function () {
       );
       const acc1rOrder = await platform.orders(1);
       expect(acc1rOrder.closed).to.eq(false);
-      expect(acc1rOrder.tokensAmount).to.eq(50);
+      expect(acc1rOrder.tokensInOrder).to.eq(50);
       expect(acc1rOrder.price).to.eq(utils.parseEther("50"));
 
       // check stock
@@ -434,7 +432,7 @@ describe("ACDMPlatform", function () {
 
       // order with index 1 is stored
       expect(acc1rOrder.closed).to.eq(false);
-      expect(acc1rOrder.tokensAmount).to.eq(50);
+      expect(acc1rOrder.tokensInOrder).to.eq(50);
       expect(acc1rOrder.price).to.eq(utils.parseEther("50"));
 
       // acc3 redeems the entire order of acc2
@@ -494,7 +492,7 @@ describe("ACDMPlatform", function () {
       ).to.be.revertedWith("Platform: closed order");
     });
 
-    it("should be fail if sale round or user wants to redeem too much", async () => {
+    it("should be fail if the user wants to redeem too much", async () => {
       await platform.startSaleRound();
       await platform.buyToken(100, { value: utils.parseEther("0.01") });
       await network.provider.send("evm_increaseTime", [ROUND_TIME]);
@@ -503,21 +501,80 @@ describe("ACDMPlatform", function () {
       await token.approve(platform.address, 100);
       await platform.addOrder(100, utils.parseEther("100"));
 
-      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
-      await platform.startSaleRound();
-
       // acc3 wants to redeem too much
       await expect(
         platform.connect(acc3).redeemOrder(0, 101, {
           value: utils.parseEther("100"),
         })
       ).to.be.revertedWith("Platform: invalid _amount");
+    });
 
+    it("should be fail if sale round", async () => {
+      await platform.startSaleRound();
       await expect(
         platform.connect(acc3).redeemOrder(0, 100, {
           value: utils.parseEther("100"),
         })
       ).to.be.revertedWith("Platform: only trade round function");
+    });
+  });
+
+  describe("removeOrder", () => {
+    it("should be possible to remove order", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("1") });
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+      await platform.startTradeRound();
+      await token.approve(platform.address, 100);
+      await platform.addOrder(100, "100");
+      await platform
+        .connect(acc1)
+        .redeemOrder(0, 10, { value: utils.parseEther("10") });
+      await platform.removeOrder(0);
+      const removedOrder = await platform.orders(0);
+      expect(removedOrder.closed).to.eq(true);
+      expect(await token.balanceOf(signer.address)).to.eq(90);
+    });
+
+    it("should be fail if not seller, invalid order or order is closed", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("1") });
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+      await platform.startTradeRound();
+      await token.approve(platform.address, 100);
+      await platform.addOrder(100, "100");
+
+      await expect(platform.connect(acc1).removeOrder(0)).to.be.revertedWith(
+        "Platform: not seller"
+      );
+
+      await expect(platform.removeOrder(1)).to.be.revertedWith(
+        "Platform: invalid order"
+      );
+
+      await platform
+        .connect(acc1)
+        .redeemOrder(0, 100, { value: utils.parseEther("100") });
+
+      await expect(platform.removeOrder(0)).to.be.revertedWith(
+        "Platform: closed order"
+      );
+    });
+
+    it("should be fail if sale round", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("1") });
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+      await platform.startTradeRound();
+      await token.approve(platform.address, 100);
+      await platform.addOrder(100, "100");
+
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+
+      await platform.startSaleRound();
+      await expect(platform.removeOrder(0)).to.be.revertedWith(
+        "Platform: only trade round function"
+      );
     });
   });
 });
