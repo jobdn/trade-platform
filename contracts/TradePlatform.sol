@@ -58,6 +58,7 @@ contract TradePlatform is ReentrancyGuard {
      * @param _referer Address of referer
      */
     function register(address _referer) public {
+        // TODO: if user1 is ferefer of user2 and user2 is referer user1
         require(msg.sender != _referer, "Plafrotm: invalid referer");
 
         users[msg.sender].isReferer = true;
@@ -159,14 +160,17 @@ contract TradePlatform is ReentrancyGuard {
         users[msg.sender].amountOfTokens += _amount;
         tokens -= _amount;
         if (tokens == 0) {
-            address(this).call(abi.encodeWithSignature("startTradeRound()"));
+            (bool success, ) = address(this).call(
+                abi.encodeWithSignature("startTradeRound()")
+            );
+            require(success, "Platform: call fail");
         }
     }
 
-    /**  @notice Explain to an end user what this does
-     * @dev If seller doesn't have enough tokens, then transaction will reverted with reason string 'ERC20: insufficient allowance'
-     * @param _amount parameter just like in doxygen (must be followed by parameter name)
-     * @param  _price parameter just like in doxygen (must be followed by parameter name)
+    /**  @notice Adds orders
+     * @dev To add order user needs to buy tokens in sale round
+     * @param _amount Amount of tokens for trade rount
+     * @param  _price Price for amount of tokens
      */
     function addOrder(uint256 _amount, uint256 _price) public {
         require(
@@ -186,5 +190,60 @@ contract TradePlatform is ReentrancyGuard {
             })
         );
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
+    }
+
+    function redeemOrder(uint256 _id, uint256 _amount)
+        public
+        payable
+        nonReentrant
+    {
+        require(_id < orders.length, "Platform: invalid order");
+        require(!orders[_id].closed, "Platform: closed order");
+        require(
+            _amount <= orders[_id].tokensAmount,
+            "Platform: invalid _amount"
+        );
+        require(
+            roundStatus == RoundStatus.TRADE,
+            "Platform: only trade round function"
+        );
+
+        uint256 spendedETH = (orders[_id].price / orders[_id].tokensAmount) *
+            _amount;
+        require(msg.value >= spendedETH, "Platform: not enough funds");
+        uint256 refund = msg.value - spendedETH;
+
+        if (refund > 0) {
+            msg.sender.call{value: refund}("");
+        }
+
+        uint256 PLATFORM_FEE = 5;
+        orders[_id].seller.call{
+            value: spendedETH - ((spendedETH * PLATFORM_FEE) / 100)
+        }("Seller ether");
+
+        address firstReferer = users[orders[_id].seller].referer;
+        if (firstReferer != address(0)) {
+            uint256 REFERER_FEE = 25;
+            address secondReferer = users[firstReferer].referer;
+            if (secondReferer != address(0)) {
+                secondReferer.call{value: (spendedETH * REFERER_FEE) / 1000}(
+                    "Percentage of second referer"
+                );
+            }
+
+            firstReferer.call{value: (spendedETH * REFERER_FEE) / 1000}(
+                "Percentage of first referer"
+            );
+        }
+
+        IERC20(token).safeTransfer(msg.sender, _amount);
+        tradeStock += spendedETH;
+
+        orders[_id].tokensAmount -= _amount;
+        orders[_id].price -= spendedETH;
+        if (orders[_id].tokensAmount == 0) {
+            orders[_id].closed = true;
+        }
     }
 }

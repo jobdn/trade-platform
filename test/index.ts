@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { expect, util } from "chai";
+import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import { ethers, network } from "hardhat";
 import {
@@ -13,6 +13,7 @@ describe("ACDMPlatform", function () {
   let signer: SignerWithAddress;
   let acc1: SignerWithAddress;
   let acc2: SignerWithAddress;
+  let acc3: SignerWithAddress;
   let platform: TradePlatform;
   let token: TradeToken;
   const ROUND_TIME = 60;
@@ -22,7 +23,7 @@ describe("ACDMPlatform", function () {
   const INITIAL_PRICE: BigNumber = utils.parseEther("0.00001");
 
   beforeEach(async () => {
-    [signer, acc1, acc2] = await ethers.getSigners();
+    [signer, acc1, acc2, acc3] = await ethers.getSigners();
     token = await new TradeToken__factory(signer).deploy("TRADE TOKEN", "TTKN");
 
     await expect(
@@ -335,6 +336,181 @@ describe("ACDMPlatform", function () {
       await platform.buyToken(100, { value: utils.parseEther("0.02") });
       await expect(
         platform.addOrder(10, utils.parseEther("0.02"))
+      ).to.be.revertedWith("Platform: only trade round function");
+    });
+  });
+
+  describe("redeemOrder", () => {
+    it("should be possible redeem all order ", async () => {
+      // signer becomes a referer
+      // acc2 -> acc1 -> signer
+      await platform.register(constants.AddressZero);
+      await platform.connect(acc1).register(signer.address);
+      await platform.connect(acc2).register(acc1.address);
+
+      await platform.startSaleRound();
+
+      // users buy tokens
+      await platform.buyToken(100, { value: utils.parseEther("0.01") });
+      await platform
+        .connect(acc1)
+        .buyToken(100, { value: utils.parseEther("0.01") });
+      await platform
+        .connect(acc2)
+        .buyToken(100, { value: utils.parseEther("0.01") });
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+
+      await platform.startTradeRound();
+      await token.approve(platform.address, 100);
+      await token.connect(acc1).approve(platform.address, 100);
+      await token.connect(acc2).approve(platform.address, 100);
+      // signer creates order with 100 tokens and 100 ether as a price
+      await platform.addOrder(100, utils.parseEther("100"));
+      await platform.connect(acc1).addOrder(100, utils.parseEther("100"));
+      await platform.connect(acc2).addOrder(100, utils.parseEther("100"));
+
+      // acc3 redeems the entire order of signer
+      // here signer doen't have referer
+      // platform received 5%
+      await expect(
+        await platform.connect(acc3).redeemOrder(0, 100, {
+          value: utils.parseEther("100"),
+        })
+      ).to.be.changeEtherBalances(
+        [acc3, signer, platform],
+        [
+          utils.parseEther("-100"),
+          utils.parseEther("95"),
+          utils.parseEther("5"),
+        ]
+      );
+      const signerOrder = await platform.orders(0);
+      expect(signerOrder.closed).to.eq(true);
+      expect(signerOrder.tokensAmount).to.eq(0);
+      expect(signerOrder.price).to.eq(utils.parseEther("0"));
+
+      // acc3 redeems the half order of acc1
+      // here acc1 is referer of signer
+      // signer receives 2.5% i.e 0.25 * 50 ether
+      // platform receives 2.5%
+      // acc1 receives 95%, i.e 0.95 * 50 ether
+      // and this order goes to next trade round
+      await expect(
+        await platform.connect(acc3).redeemOrder(1, 50, {
+          value: utils.parseEther("51"),
+        })
+      ).to.be.changeEtherBalances(
+        [acc3, acc1, signer, platform],
+        [
+          utils.parseEther("-50"),
+          utils.parseEther("47.5"),
+          utils.parseEther("1.25"),
+          utils.parseEther("1.25"),
+        ]
+      );
+      const acc1rOrder = await platform.orders(1);
+      expect(acc1rOrder.closed).to.eq(false);
+      expect(acc1rOrder.tokensAmount).to.eq(50);
+      expect(acc1rOrder.price).to.eq(utils.parseEther("50"));
+
+      // check stock
+      expect(await platform.tradeStock()).to.eq(utils.parseEther("150"));
+
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+      await platform.startSaleRound();
+      // Check amount of tokens in new sale round
+      expect(await platform.tokens()).to.eq(
+        utils.parseEther("150").div(await platform.tokenPrice())
+      );
+
+      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
+      await platform.startTradeRound();
+
+      // order with index 1 is stored
+      expect(acc1rOrder.closed).to.eq(false);
+      expect(acc1rOrder.tokensAmount).to.eq(50);
+      expect(acc1rOrder.price).to.eq(utils.parseEther("50"));
+
+      // acc3 redeems the entire order of acc2
+      // here acc2 is referer of acc1 and acc1 is referer of signer
+      // signer receives 2.5% i.e 0.25 * 50 ether
+      // acc1 receives 2.5%
+      // acc2 receives 95%, i.e 0.95 * 50 ether
+      await expect(
+        await platform.connect(acc3).redeemOrder(2, 100, {
+          value: utils.parseEther("100"),
+        })
+      ).to.be.changeEtherBalances(
+        [acc3, acc2, acc1, signer],
+        [
+          utils.parseEther("-100"),
+          utils.parseEther("95"),
+          utils.parseEther("2.5"),
+          utils.parseEther("2.5"),
+        ]
+      );
+    });
+
+    it("should be fail if invalid index", async () => {
+      await platform.startSaleRound();
+
+      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
+      await platform.startTradeRound();
+      await expect(platform.redeemOrder(0, 1)).to.be.revertedWith(
+        "Platform: invalid order"
+      );
+    });
+
+    it("should be fail if order is closed or not enogh funds", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("0.01") });
+
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+      await platform.startTradeRound();
+
+      await token.approve(platform.address, 100);
+      await platform.addOrder(100, utils.parseEther("100"));
+
+      await expect(
+        platform.connect(acc3).redeemOrder(0, 100, {
+          value: utils.parseEther("1"),
+        })
+      ).to.be.revertedWith("Platform: not enough funds");
+
+      await platform.connect(acc3).redeemOrder(0, 100, {
+        value: utils.parseEther("100"),
+      });
+
+      await expect(
+        platform.connect(acc3).redeemOrder(0, 100, {
+          value: utils.parseEther("100"),
+        })
+      ).to.be.revertedWith("Platform: closed order");
+    });
+
+    it("should be fail if sale round or user wants to redeem too much", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("0.01") });
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+
+      await platform.startTradeRound();
+      await token.approve(platform.address, 100);
+      await platform.addOrder(100, utils.parseEther("100"));
+
+      await network.provider.send("evm_increaseTime", [ROUND_TIME]);
+      await platform.startSaleRound();
+
+      // acc3 wants to redeem too much
+      await expect(
+        platform.connect(acc3).redeemOrder(0, 101, {
+          value: utils.parseEther("100"),
+        })
+      ).to.be.revertedWith("Platform: invalid _amount");
+
+      await expect(
+        platform.connect(acc3).redeemOrder(0, 100, {
+          value: utils.parseEther("100"),
+        })
       ).to.be.revertedWith("Platform: only trade round function");
     });
   });

@@ -30,6 +30,7 @@ export interface TradePlatformInterface extends utils.Interface {
     "addOrder(uint256,uint256)": FunctionFragment;
     "buyToken(uint256)": FunctionFragment;
     "orders(uint256)": FunctionFragment;
+    "redeemOrder(uint256,uint256)": FunctionFragment;
     "register(address)": FunctionFragment;
     "roundEndTime()": FunctionFragment;
     "roundStartTime()": FunctionFragment;
@@ -51,6 +52,7 @@ export interface TradePlatformInterface extends utils.Interface {
       | "addOrder"
       | "buyToken"
       | "orders"
+      | "redeemOrder"
       | "register"
       | "roundEndTime"
       | "roundStartTime"
@@ -81,6 +83,10 @@ export interface TradePlatformInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "orders",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "redeemOrder",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "register", values: [string]): string;
   encodeFunctionData(
@@ -124,6 +130,10 @@ export interface TradePlatformInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "addOrder", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "buyToken", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "orders", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "redeemOrder",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "register", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "roundEndTime",
@@ -209,6 +219,12 @@ export interface TradePlatform extends BaseContract {
       }
     >;
 
+    redeemOrder(
+      _id: BigNumberish,
+      _amount: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     register(
       _referer: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -277,6 +293,12 @@ export interface TradePlatform extends BaseContract {
     }
   >;
 
+  redeemOrder(
+    _id: BigNumberish,
+    _amount: BigNumberish,
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   register(
     _referer: string,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -342,6 +364,12 @@ export interface TradePlatform extends BaseContract {
       }
     >;
 
+    redeemOrder(
+      _id: BigNumberish,
+      _amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     register(_referer: string, overrides?: CallOverrides): Promise<void>;
 
     roundEndTime(overrides?: CallOverrides): Promise<BigNumber>;
@@ -395,6 +423,12 @@ export interface TradePlatform extends BaseContract {
     ): Promise<BigNumber>;
 
     orders(arg0: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
+
+    redeemOrder(
+      _id: BigNumberish,
+      _amount: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
 
     register(
       _referer: string,
@@ -452,6 +486,12 @@ export interface TradePlatform extends BaseContract {
     orders(
       arg0: BigNumberish,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    redeemOrder(
+      _id: BigNumberish,
+      _amount: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     register(
