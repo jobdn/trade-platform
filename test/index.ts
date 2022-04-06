@@ -64,8 +64,6 @@ describe("ACDMPlatform", function () {
       expect(await platform.INITIAL_TOKEN_AMOUNT()).to.eq(INITIAL_TOKEN_AMOUNT);
       expect(await platform.roundStatus()).to.eq(TRADE);
     });
-
-    it("should be fail if token is equal to zero address", async () => {});
   });
 
   // HELPERS
@@ -97,9 +95,11 @@ describe("ACDMPlatform", function () {
       // second sale round
       await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
       await platform.startSaleRound();
-      // TODO: check tokens in the second sale round
-      expect(await platform.tokenPrice()).to.eq(utils.parseEther("0.0000143"));
+      expect(await platform.tokenPrice()).to.eq(INITIAL_PRICE);
       expect(await platform.tokens()).to.eq(0);
+      expect(await platform.tradeStock()).to.eq(0);
+
+      expect(await platform.roundStatus()).to.eq(TRADE);
     });
 
     it("should be fail if the sale round starts again after the sale round", async () => {
@@ -139,11 +139,14 @@ describe("ACDMPlatform", function () {
       await expect(platform.register(signer.address)).to.be.revertedWith(
         "Plafrotm: invalid referer"
       );
+    });
+
+    it("should be fail if user is alredy referer", async () => {
       // signer becomes referer
       await platform.register(constants.AddressZero);
       await platform.connect(acc1).register(signer.address);
       await expect(platform.register(acc1.address)).to.be.revertedWith(
-        "Plafrotm: invalid referer"
+        "Platform: already referer"
       );
     });
 
@@ -255,17 +258,8 @@ describe("ACDMPlatform", function () {
     it("should be fail if user tries to buy tokens with not enough ethers", async () => {
       await platform.startSaleRound();
       await expect(platform.buyToken(100)).to.be.revertedWith(
-        "Platform: not enough msg.value"
+        "Platform: not enough funds"
       );
-    });
-
-    it("should be fail if user tries to buy tokens in the trade round", async () => {
-      await platform.startSaleRound();
-      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
-      await platform.startTradeRound();
-      expect(
-        platform.buyToken(100, { value: utils.parseEther("1") })
-      ).to.be.revertedWith("Platform: only sale round");
     });
   });
 
@@ -569,7 +563,9 @@ describe("ACDMPlatform", function () {
       await platform.startTradeRound();
       await token.approve(platform.address, 100);
       await platform.addOrder(100, "100");
-
+      await platform
+        .connect(acc1)
+        .redeemOrder(0, 10, { value: utils.parseEther("10") });
       await network.provider.send("evm_increaseTime", [ROUND_TIME]);
 
       await platform.startSaleRound();

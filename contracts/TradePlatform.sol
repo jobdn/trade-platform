@@ -19,10 +19,11 @@ contract TradePlatform is ReentrancyGuard {
     uint256 public tokenPrice;
     uint256 public tokens;
     address public token;
-    RoundStatus public roundStatus;
-
-    mapping(address => uint256) public _balances;
     mapping(address => User) public users;
+    error NotExpiredTimeError(string errorMsg);
+    RoundStatus public roundStatus;
+    Order[] public orders;
+
     enum RoundStatus {
         SALE,
         TRADE
@@ -40,14 +41,9 @@ contract TradePlatform is ReentrancyGuard {
         bool closed;
     }
 
-    Order[] public orders;
-
-    error NotExpiredTimeError(string errorMsg);
-
     constructor(address _token, uint256 _roundTime) {
         require(_token != address(0), "Platform: invalid token");
         require(_roundTime != 0, "Platform: invalid round time");
-        // TODO: avoid referer circle
         token = _token;
         roundTime = _roundTime;
         roundStatus = RoundStatus.TRADE;
@@ -59,10 +55,8 @@ contract TradePlatform is ReentrancyGuard {
      * @param _referer Address of referer
      */
     function register(address _referer) public {
-        require(
-            msg.sender != _referer && !users[msg.sender].isReferer,
-            "Plafrotm: invalid referer"
-        );
+        require(msg.sender != _referer, "Plafrotm: invalid referer");
+        require(!users[msg.sender].isReferer, "Platform: already referer");
 
         users[msg.sender].isReferer = true;
 
@@ -88,30 +82,34 @@ contract TradePlatform is ReentrancyGuard {
             "Platform: time of the last round is not over"
         );
 
+        roundStatus = RoundStatus.SALE;
         if (tokenPrice == 0) {
             // Sale round starts for the first time
             tokenPrice = 1 ether / INITIAL_TOKEN_AMOUNT;
             tokens = INITIAL_TOKEN_AMOUNT;
         } else {
-            tokenPrice = (tokenPrice * 103) / 100 + 4 * 10**12;
-            // TODO: tradeStock is equal to zero then call the startTradeRound
-            tokens = tradeStock / tokenPrice;
+            if (tradeStock == 0) {
+                startTradeRound();
+            } else {
+                tokenPrice = (tokenPrice * 103) / 100 + 4 * 10**12;
+                tokens = tradeStock / tokenPrice;
+            }
         }
         TradeToken(token).mint(address(this), tokens);
         roundStartTime = block.timestamp;
         roundEndTime = roundStartTime + roundTime;
-        roundStatus = RoundStatus.SALE;
     }
 
     /**
      *  @notice Starts Trade round
+     *  @dev This function can be called before expiration of sale round
+     *      When all tokens are sold or 'tradeStock' is equal to zero
      */
     function startTradeRound() public {
         require(
             roundStatus == RoundStatus.SALE,
             "Platform: sale round is not over"
         );
-        // TODO: Can I implement this using require?
         if (block.timestamp <= roundEndTime && tokens != 0) {
             revert NotExpiredTimeError(
                 "Platform: time of the last round is not over"
@@ -119,15 +117,16 @@ contract TradePlatform is ReentrancyGuard {
         }
 
         TradeToken(token).burn(address(this), tokens);
+        tokens = 0;
         roundStartTime = block.timestamp;
         roundEndTime = roundStartTime + roundTime;
         roundStatus = RoundStatus.TRADE;
     }
 
     /**
-        @notice User can buy ACDM tokens for ETH
-        @dev If user sends tokens more than necessary, then the excess is sent back 
-        @param _amount Amount of purchased tokens
+     * @notice User can buy ACDM tokens for ETH
+     * @dev If user sends tokens more than necessary, then the excess is sent back
+     * @param _amount Amount of purchased tokens
      */
     function buyToken(uint256 _amount) public payable nonReentrant {
         require(
@@ -136,9 +135,8 @@ contract TradePlatform is ReentrancyGuard {
         );
         require(
             msg.value / tokenPrice >= _amount,
-            "Platform: not enough msg.value"
+            "Platform: not enough funds"
         );
-        require(roundStatus == RoundStatus.SALE, "Platform: only sale round");
 
         uint256 refund = msg.value - tokenPrice * _amount;
         if (refund > 0) {
@@ -163,10 +161,7 @@ contract TradePlatform is ReentrancyGuard {
         IERC20(token).safeTransfer(msg.sender, _amount);
         tokens -= _amount;
         if (tokens == 0) {
-            (bool success, ) = address(this).call(
-                abi.encodeWithSignature("startTradeRound()")
-            );
-            require(success, "Platform: call fail");
+            startTradeRound();
         }
     }
 
@@ -257,7 +252,7 @@ contract TradePlatform is ReentrancyGuard {
 
     /**
      *  @notice Removes order by id
-     * @param _id Order id
+     *  @param _id Order id
      */
     function removeOrder(uint256 _id) public nonReentrant onlyTradeRound {
         require(_id < orders.length, "Platform: invalid order");
