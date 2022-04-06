@@ -48,6 +48,7 @@ contract TradePlatform is ReentrancyGuard {
     constructor(address _token, uint256 _roundTime) {
         require(_token != address(0), "Platform: invalid token");
         require(_roundTime != 0, "Platform: invalid round time");
+        // TODO: avoid referer circle
         token = _token;
         roundTime = _roundTime;
         roundStatus = RoundStatus.TRADE;
@@ -58,8 +59,10 @@ contract TradePlatform is ReentrancyGuard {
      * @param _referer Address of referer
      */
     function register(address _referer) public {
-        // TODO: if user1 is ferefer of user2 and user2 is referer user1
-        require(msg.sender != _referer, "Plafrotm: invalid referer");
+        require(
+            msg.sender != _referer && !users[msg.sender].isReferer,
+            "Plafrotm: invalid referer"
+        );
 
         users[msg.sender].isReferer = true;
 
@@ -238,9 +241,9 @@ contract TradePlatform is ReentrancyGuard {
         }
 
         IERC20(token).safeTransfer(msg.sender, _amount);
-        tradeStock += spendedETH;
 
         orders[_id].tokensAmount -= _amount;
+        tradeStock += spendedETH;
         orders[_id].price -= spendedETH;
         if (orders[_id].tokensAmount == 0) {
             orders[_id].closed = true;

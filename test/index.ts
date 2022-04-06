@@ -140,8 +140,14 @@ describe("ACDMPlatform", function () {
       expect((await platform.users(acc1.address)).isReferer).to.eq(true);
     });
 
-    it("should be fail if referer doesn't exist", async () => {
+    it("should be fail if invalid", async () => {
       await expect(platform.register(signer.address)).to.be.revertedWith(
+        "Plafrotm: invalid referer"
+      );
+      // signer becomes referer
+      await platform.register(constants.AddressZero);
+      await platform.connect(acc1).register(signer.address);
+      await expect(platform.register(acc1.address)).to.be.revertedWith(
         "Plafrotm: invalid referer"
       );
     });
