@@ -54,7 +54,8 @@ contract TradePlatform is ReentrancyGuard {
         INITIAL_TOKEN_AMOUNT = 10**5;
     }
 
-    /**@notice User needs to call this function to become referer
+    /**
+     * @notice User needs to call this function to become referer
      * @param _referer Address of referer
      */
     function register(address _referer) public {
@@ -75,7 +76,7 @@ contract TradePlatform is ReentrancyGuard {
     }
 
     /**
-        @notice Starts Sale round
+     *  @notice Starts Sale round
      */
     function startSaleRound() public {
         require(
@@ -103,7 +104,7 @@ contract TradePlatform is ReentrancyGuard {
     }
 
     /**
-        @notice Starts Trade round
+     *  @notice Starts Trade round
      */
     function startTradeRound() public {
         require(
@@ -177,7 +178,8 @@ contract TradePlatform is ReentrancyGuard {
         _;
     }
 
-    /**  @notice Adds orders
+    /**
+     * @notice Adds orders
      * @dev To add order user needs to buy tokens in sale round
      * @param _amount Amount of tokens for trade rount
      * @param  _price Price for amount of tokens
@@ -195,10 +197,12 @@ contract TradePlatform is ReentrancyGuard {
         );
     }
 
-    /// @notice Redeems _amount tokens from the order by id
-    /// @dev When user redeems some tokens from the order he receives 95% of entire price of the order
-    /// @param _id Order id
-    /// @param _amount Amount of buyed tokens from the order
+    /**
+     * @notice Redeems _amount tokens from the order by id
+     * @dev When user redeems some tokens from the order he receives 95% of entire price of the order
+     * @param _id Order id
+     * @param _amount Amount of buyed tokens from the order
+     */
     function redeemOrder(uint256 _id, uint256 _amount)
         public
         payable
@@ -251,6 +255,10 @@ contract TradePlatform is ReentrancyGuard {
         }
     }
 
+    /**
+     *  @notice Removes order by id
+     * @param _id Order id
+     */
     function removeOrder(uint256 _id) public nonReentrant onlyTradeRound {
         require(_id < orders.length, "Platform: invalid order");
         require(msg.sender == orders[_id].seller, "Platform: not seller");

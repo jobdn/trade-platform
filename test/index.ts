@@ -368,6 +368,7 @@ describe("ACDMPlatform", function () {
       await token.approve(platform.address, 100);
       await token.connect(acc1).approve(platform.address, 100);
       await token.connect(acc2).approve(platform.address, 100);
+
       // signer creates order with 100 tokens and 100 ether as a price
       await platform.addOrder(100, utils.parseEther("100"));
       await platform.connect(acc1).addOrder(100, utils.parseEther("100"));
