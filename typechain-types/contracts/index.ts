@@ -3,4 +3,5 @@
 /* eslint-disable */
 import type * as test from "./test";
 export type { test };
+export type { IPlatform } from "./IPlatform";
 export type { TradePlatform } from "./TradePlatform";

@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./test/TradeToken.sol";
+import "./IPlatform.sol";
 
-contract TradePlatform is ReentrancyGuard {
+contract TradePlatform is IPlatform, ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public INITIAL_TOKEN_AMOUNT;
     uint256 public roundTime;
@@ -22,25 +23,6 @@ contract TradePlatform is ReentrancyGuard {
     RoundStatus public roundStatus;
     Order[] public orders;
 
-    error NotExpiredTimeError(string errorMsg);
-    error TradeError(string errorMsg);
-    enum RoundStatus {
-        SALE,
-        TRADE
-    }
-
-    struct User {
-        address referer;
-        bool isReferer;
-    }
-
-    struct Order {
-        uint256 tokensInOrder;
-        uint256 price;
-        address seller;
-        bool closed;
-    }
-
     constructor(address _token, uint256 _roundTime) {
         require(_token != address(0), "Platform: invalid token");
         require(_roundTime != 0, "Platform: invalid round time");
@@ -51,11 +33,7 @@ contract TradePlatform is ReentrancyGuard {
         firstTradeRound = true;
     }
 
-    /**
-     * @notice User needs to call this function to become referer
-     * @param _referer Address of referer
-     */
-    function register(address _referer) public {
+    function register(address _referer) public override {
         require(msg.sender != _referer, "Platform: invalid referer");
         require(!users[msg.sender].isReferer, "Platform: already referer");
 
@@ -70,10 +48,7 @@ contract TradePlatform is ReentrancyGuard {
         }
     }
 
-    /**
-     *  @notice Starts Sale round
-     */
-    function startSaleRound() public {
+    function startSaleRound() public override {
         require(
             roundStatus == RoundStatus.TRADE,
             "Platform: trade round is not over"
@@ -101,13 +76,6 @@ contract TradePlatform is ReentrancyGuard {
         roundEndTime = roundStartTime + roundTime;
     }
 
-    /**
-     *  @notice Starts Trade round
-     *  @dev This function can be called before expiration of sale round
-     *      When all tokens are sold or 'tradeStock' is equal to zero
-     *
-     *      At least one token must be sold in the first sale round
-     */
     function startTradeRound() public {
         require(
             roundStatus == RoundStatus.SALE,
@@ -134,12 +102,7 @@ contract TradePlatform is ReentrancyGuard {
         roundStatus = RoundStatus.TRADE;
     }
 
-    /**
-     * @notice User can buy ACDM tokens for ETH
-     * @dev If user sends tokens more than necessary, then the excess is sent back
-     * @param _amount Amount of purchased tokens
-     */
-    function buyToken(uint256 _amount) public payable nonReentrant {
+    function buyToken(uint256 _amount) public payable override nonReentrant {
         require(
             _amount <= tokens,
             "Platform: not enough tokens on the plaftorm"
@@ -174,6 +137,8 @@ contract TradePlatform is ReentrancyGuard {
         if (tokens == 0) {
             startTradeRound();
         }
+
+        emit TokensSold(msg.sender, _amount);
     }
 
     modifier onlyTradeRound() {
@@ -184,12 +149,6 @@ contract TradePlatform is ReentrancyGuard {
         _;
     }
 
-    /**
-     * @notice Adds orders
-     * @dev To add order user needs to buy tokens in sale round
-     * @param _amount Amount of tokens for trade rount
-     * @param  _price Price for amount of tokens
-     */
     function addOrder(uint256 _amount, uint256 _price) public onlyTradeRound {
         require(_amount != 0, "Platform: zero funds are sent");
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
@@ -201,14 +160,10 @@ contract TradePlatform is ReentrancyGuard {
                 closed: false
             })
         );
+
+        emit OrderAdded(msg.sender, _amount, _price);
     }
 
-    /**
-     * @notice Redeems _amount tokens from the order by id
-     * @dev When user redeems some tokens from the order he receives 95% of entire price of the order
-     * @param _id Order id
-     * @param _amount Amount of buyed tokens from the order
-     */
     function redeemOrder(uint256 _id, uint256 _amount)
         public
         payable
@@ -258,18 +213,19 @@ contract TradePlatform is ReentrancyGuard {
         tradeStock += spendedETH;
         if (orders[_id].tokensInOrder == 0) {
             orders[_id].closed = true;
+            emit OrderClosed(msg.sender, _id);
         }
+
+        emit OrderRedeemed(msg.sender, _id, _amount);
     }
 
-    /**
-     *  @notice Removes order by id
-     *  @param _id Order id
-     */
     function removeOrder(uint256 _id) public nonReentrant onlyTradeRound {
         require(_id < orders.length, "Platform: invalid order");
         require(msg.sender == orders[_id].seller, "Platform: not seller");
         require(!orders[_id].closed, "Platform: closed order");
         orders[_id].closed = true;
         IERC20(token).transfer(msg.sender, orders[_id].tokensInOrder);
+
+        emit OrderClosed(msg.sender, _id);
     }
 }

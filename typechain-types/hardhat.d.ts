@@ -41,6 +41,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC165__factory>;
     getContractFactory(
+      name: "IPlatform",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPlatform__factory>;
+    getContractFactory(
       name: "TradeToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.TradeToken__factory>;
@@ -84,6 +88,11 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.IERC165>;
+    getContractAt(
+      name: "IPlatform",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IPlatform>;
     getContractAt(
       name: "TradeToken",
       address: string,

@@ -2,4 +2,5 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as test from "./test";
+export { IPlatform__factory } from "./IPlatform__factory";
 export { TradePlatform__factory } from "./TradePlatform__factory";
