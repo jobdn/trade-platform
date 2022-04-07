@@ -92,6 +92,22 @@ describe("ACDMPlatform", function () {
       );
     });
 
+    it("should start trade round if in the prev trade round nothing was sold", async () => {
+      // first sale round
+      await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("1") });
+
+      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
+
+      await platform.startTradeRound();
+      expect(await platform.tradeStock()).to.eq(0);
+      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
+
+      await platform.startSaleRound();
+
+      expect(await platform.roundStatus()).to.eq(TRADE);
+    });
+
     it("should be fail if the sale round starts again after the sale round", async () => {
       await platform.startSaleRound();
       await expect(platform.startSaleRound()).to.be.revertedWith(
@@ -259,7 +275,6 @@ describe("ACDMPlatform", function () {
     it("should start a trade round", async () => {
       await platform.startSaleRound();
       await platform.buyToken(1, { value: utils.parseEther("1") });
-      expect(await platform.totalBuyedTokens()).to.eq(1);
 
       await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
 
@@ -270,7 +285,6 @@ describe("ACDMPlatform", function () {
       expect(await platform.roundEndTime()).to.eq(ts + ROUND_TIME);
       expect(await platform.roundStatus()).to.eq(TRADE);
       expect(await token.balanceOf(platform.address)).to.eq(0);
-      expect(await platform.totalBuyedTokens()).to.eq(0);
     });
 
     it("should be fail if the user tries to start trade round again after trade round", async () => {
@@ -296,6 +310,15 @@ describe("ACDMPlatform", function () {
       expect(await platform.roundStartTime()).to.eq(ts);
       expect(await platform.roundEndTime()).to.eq(ts + ROUND_TIME);
       expect(await platform.roundStatus()).to.eq(SALE);
+    });
+
+    it("should be fail if in the first sale round nothing was sold", async () => {
+      await platform.startSaleRound();
+      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
+
+      await expect(platform.startTradeRound()).to.be.revertedWith(
+        "Platform: nothing to trade in the first srade round"
+      );
     });
   });
 

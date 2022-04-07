@@ -28,6 +28,7 @@ export interface TradePlatformInterface extends utils.Interface {
     "INITIAL_TOKEN_AMOUNT()": FunctionFragment;
     "addOrder(uint256,uint256)": FunctionFragment;
     "buyToken(uint256)": FunctionFragment;
+    "firstTradeRound()": FunctionFragment;
     "orders(uint256)": FunctionFragment;
     "redeemOrder(uint256,uint256)": FunctionFragment;
     "register(address)": FunctionFragment;
@@ -41,7 +42,6 @@ export interface TradePlatformInterface extends utils.Interface {
     "token()": FunctionFragment;
     "tokenPrice()": FunctionFragment;
     "tokens()": FunctionFragment;
-    "totalBuyedTokens()": FunctionFragment;
     "tradeStock()": FunctionFragment;
     "users(address)": FunctionFragment;
   };
@@ -51,6 +51,7 @@ export interface TradePlatformInterface extends utils.Interface {
       | "INITIAL_TOKEN_AMOUNT"
       | "addOrder"
       | "buyToken"
+      | "firstTradeRound"
       | "orders"
       | "redeemOrder"
       | "register"
@@ -64,7 +65,6 @@ export interface TradePlatformInterface extends utils.Interface {
       | "token"
       | "tokenPrice"
       | "tokens"
-      | "totalBuyedTokens"
       | "tradeStock"
       | "users"
   ): FunctionFragment;
@@ -80,6 +80,10 @@ export interface TradePlatformInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "buyToken",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "firstTradeRound",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "orders",
@@ -122,10 +126,6 @@ export interface TradePlatformInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "tokens", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "totalBuyedTokens",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "tradeStock",
     values?: undefined
   ): string;
@@ -137,6 +137,10 @@ export interface TradePlatformInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "addOrder", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "buyToken", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "firstTradeRound",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "orders", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "redeemOrder",
@@ -171,10 +175,6 @@ export interface TradePlatformInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "token", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tokenPrice", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tokens", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "totalBuyedTokens",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "tradeStock", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "users", data: BytesLike): Result;
 
@@ -220,6 +220,8 @@ export interface TradePlatform extends BaseContract {
       _amount: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    firstTradeRound(overrides?: CallOverrides): Promise<[boolean]>;
 
     orders(
       arg0: BigNumberish,
@@ -271,8 +273,6 @@ export interface TradePlatform extends BaseContract {
 
     tokens(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    totalBuyedTokens(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     tradeStock(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     users(
@@ -293,6 +293,8 @@ export interface TradePlatform extends BaseContract {
     _amount: BigNumberish,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  firstTradeRound(overrides?: CallOverrides): Promise<boolean>;
 
   orders(
     arg0: BigNumberish,
@@ -344,8 +346,6 @@ export interface TradePlatform extends BaseContract {
 
   tokens(overrides?: CallOverrides): Promise<BigNumber>;
 
-  totalBuyedTokens(overrides?: CallOverrides): Promise<BigNumber>;
-
   tradeStock(overrides?: CallOverrides): Promise<BigNumber>;
 
   users(
@@ -363,6 +363,8 @@ export interface TradePlatform extends BaseContract {
     ): Promise<void>;
 
     buyToken(_amount: BigNumberish, overrides?: CallOverrides): Promise<void>;
+
+    firstTradeRound(overrides?: CallOverrides): Promise<boolean>;
 
     orders(
       arg0: BigNumberish,
@@ -404,8 +406,6 @@ export interface TradePlatform extends BaseContract {
 
     tokens(overrides?: CallOverrides): Promise<BigNumber>;
 
-    totalBuyedTokens(overrides?: CallOverrides): Promise<BigNumber>;
-
     tradeStock(overrides?: CallOverrides): Promise<BigNumber>;
 
     users(
@@ -429,6 +429,8 @@ export interface TradePlatform extends BaseContract {
       _amount: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    firstTradeRound(overrides?: CallOverrides): Promise<BigNumber>;
 
     orders(arg0: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -470,8 +472,6 @@ export interface TradePlatform extends BaseContract {
 
     tokens(overrides?: CallOverrides): Promise<BigNumber>;
 
-    totalBuyedTokens(overrides?: CallOverrides): Promise<BigNumber>;
-
     tradeStock(overrides?: CallOverrides): Promise<BigNumber>;
 
     users(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
@@ -492,6 +492,8 @@ export interface TradePlatform extends BaseContract {
       _amount: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    firstTradeRound(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     orders(
       arg0: BigNumberish,
@@ -535,8 +537,6 @@ export interface TradePlatform extends BaseContract {
     tokenPrice(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     tokens(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    totalBuyedTokens(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     tradeStock(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 

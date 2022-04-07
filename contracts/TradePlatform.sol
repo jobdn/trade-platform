@@ -12,7 +12,7 @@ import "./test/TradeToken.sol";
 contract TradePlatform is ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public INITIAL_TOKEN_AMOUNT;
-    uint256 public totalBuyedTokens;
+    bool public firstTradeRound;
     uint256 public roundTime;
     uint256 public tradeStock;
     uint256 public roundStartTime;
@@ -21,10 +21,11 @@ contract TradePlatform is ReentrancyGuard {
     uint256 public tokens;
     address public token;
     mapping(address => User) public users;
-    error NotExpiredTimeError(string errorMsg);
     RoundStatus public roundStatus;
     Order[] public orders;
 
+    error NotExpiredTimeError(string errorMsg);
+    error TradeError(string errorMsg);
     enum RoundStatus {
         SALE,
         TRADE
@@ -49,6 +50,7 @@ contract TradePlatform is ReentrancyGuard {
         roundTime = _roundTime;
         roundStatus = RoundStatus.TRADE;
         INITIAL_TOKEN_AMOUNT = 10**5;
+        firstTradeRound = true;
     }
 
     /**
@@ -83,18 +85,17 @@ contract TradePlatform is ReentrancyGuard {
             "Platform: time of the last round is not over"
         );
 
-        if (tokenPrice == 0) {
+        roundStatus = RoundStatus.SALE;
+        if (firstTradeRound) {
             // Sale round starts for the first time
             tokenPrice = 1 ether / INITIAL_TOKEN_AMOUNT;
             tokens = INITIAL_TOKEN_AMOUNT;
-            roundStatus = RoundStatus.SALE;
         } else {
             if (tradeStock == 0) {
                 startTradeRound();
             } else {
                 tokenPrice = (tokenPrice * 103) / 100 + 4 * 10**12;
                 tokens = tradeStock / tokenPrice;
-                roundStatus = RoundStatus.SALE;
             }
         }
         TradeToken(token).mint(address(this), tokens);
@@ -112,7 +113,12 @@ contract TradePlatform is ReentrancyGuard {
             roundStatus == RoundStatus.SALE,
             "Platform: sale round is not over"
         );
-        require(totalBuyedTokens != 0, "Platfomr: there is nothing to trade");
+
+        if (tokens == INITIAL_TOKEN_AMOUNT && firstTradeRound) {
+            revert TradeError(
+                "Platform: nothing to trade in the first srade round"
+            );
+        }
         if (block.timestamp <= roundEndTime && tokens != 0) {
             revert NotExpiredTimeError(
                 "Platform: time of the last round is not over or amount of tokens is not zero"
@@ -122,7 +128,7 @@ contract TradePlatform is ReentrancyGuard {
         TradeToken(token).burn(address(this), tokens);
         tokens = 0;
         tradeStock = 0;
-        // totalBuyedTokens = 0;
+        firstTradeRound = false;
         roundStartTime = block.timestamp;
         roundEndTime = roundStartTime + roundTime;
         roundStatus = RoundStatus.TRADE;
@@ -165,7 +171,6 @@ contract TradePlatform is ReentrancyGuard {
 
         IERC20(token).safeTransfer(msg.sender, _amount);
         tokens -= _amount;
-        totalBuyedTokens += _amount;
         if (tokens == 0) {
             startTradeRound();
         }
@@ -249,8 +254,6 @@ contract TradePlatform is ReentrancyGuard {
         IERC20(token).safeTransfer(msg.sender, _amount);
 
         orders[_id].tokensInOrder -= _amount;
-        // TODO: when order is redeemed sub amount
-        // !!! totalBuyedTokens -= _amount;
         orders[_id].price -= spendedETH;
         tradeStock += spendedETH;
         if (orders[_id].tokensInOrder == 0) {
