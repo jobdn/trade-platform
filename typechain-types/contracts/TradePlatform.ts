@@ -41,6 +41,7 @@ export interface TradePlatformInterface extends utils.Interface {
     "token()": FunctionFragment;
     "tokenPrice()": FunctionFragment;
     "tokens()": FunctionFragment;
+    "totalBuyedTokens()": FunctionFragment;
     "tradeStock()": FunctionFragment;
     "users(address)": FunctionFragment;
   };
@@ -63,6 +64,7 @@ export interface TradePlatformInterface extends utils.Interface {
       | "token"
       | "tokenPrice"
       | "tokens"
+      | "totalBuyedTokens"
       | "tradeStock"
       | "users"
   ): FunctionFragment;
@@ -120,6 +122,10 @@ export interface TradePlatformInterface extends utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "tokens", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "totalBuyedTokens",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "tradeStock",
     values?: undefined
   ): string;
@@ -165,6 +171,10 @@ export interface TradePlatformInterface extends utils.Interface {
   decodeFunctionResult(functionFragment: "token", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tokenPrice", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tokens", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "totalBuyedTokens",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "tradeStock", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "users", data: BytesLike): Result;
 
@@ -261,6 +271,8 @@ export interface TradePlatform extends BaseContract {
 
     tokens(overrides?: CallOverrides): Promise<[BigNumber]>;
 
+    totalBuyedTokens(overrides?: CallOverrides): Promise<[BigNumber]>;
+
     tradeStock(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     users(
@@ -332,6 +344,8 @@ export interface TradePlatform extends BaseContract {
 
   tokens(overrides?: CallOverrides): Promise<BigNumber>;
 
+  totalBuyedTokens(overrides?: CallOverrides): Promise<BigNumber>;
+
   tradeStock(overrides?: CallOverrides): Promise<BigNumber>;
 
   users(
@@ -389,6 +403,8 @@ export interface TradePlatform extends BaseContract {
     tokenPrice(overrides?: CallOverrides): Promise<BigNumber>;
 
     tokens(overrides?: CallOverrides): Promise<BigNumber>;
+
+    totalBuyedTokens(overrides?: CallOverrides): Promise<BigNumber>;
 
     tradeStock(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -454,6 +470,8 @@ export interface TradePlatform extends BaseContract {
 
     tokens(overrides?: CallOverrides): Promise<BigNumber>;
 
+    totalBuyedTokens(overrides?: CallOverrides): Promise<BigNumber>;
+
     tradeStock(overrides?: CallOverrides): Promise<BigNumber>;
 
     users(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
@@ -517,6 +535,8 @@ export interface TradePlatform extends BaseContract {
     tokenPrice(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     tokens(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    totalBuyedTokens(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     tradeStock(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 

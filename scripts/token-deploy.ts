@@ -5,7 +5,8 @@ async function main() {
   const [signer] = await ethers.getSigners();
   const token = await new TradeToken__factory(signer).deploy(
     "TRADE TOKEN",
-    "TRT"
+    "TRT",
+    3
   );
 
   await token.deployed();

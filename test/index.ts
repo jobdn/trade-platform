@@ -24,7 +24,11 @@ describe("ACDMPlatform", function () {
 
   beforeEach(async () => {
     [signer, acc1, acc2, acc3] = await ethers.getSigners();
-    token = await new TradeToken__factory(signer).deploy("TRADE TOKEN", "TTKN");
+    token = await new TradeToken__factory(signer).deploy(
+      "TRADE TOKEN",
+      "TTKN",
+      5
+    );
 
     await expect(
       new TradePlatform__factory(signer).deploy(token.address, 0)
@@ -86,20 +90,6 @@ describe("ACDMPlatform", function () {
       expect(await token.balanceOf(platform.address)).to.eq(
         INITIAL_TOKEN_AMOUNT
       );
-
-      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
-      // starts trade round
-      await platform.startTradeRound();
-      expect(await platform.roundStatus()).to.eq(TRADE);
-
-      // second sale round
-      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
-      await platform.startSaleRound();
-      expect(await platform.tokenPrice()).to.eq(INITIAL_PRICE);
-      expect(await platform.tokens()).to.eq(0);
-      expect(await platform.tradeStock()).to.eq(0);
-
-      expect(await platform.roundStatus()).to.eq(TRADE);
     });
 
     it("should be fail if the sale round starts again after the sale round", async () => {
@@ -111,7 +101,9 @@ describe("ACDMPlatform", function () {
 
     it("should be fail if the time of the last round is not over", async () => {
       await platform.startSaleRound();
+      await platform.buyToken(100, { value: utils.parseEther("1") });
       await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
+
       await platform.startTradeRound();
 
       await expect(platform.startSaleRound()).to.be.revertedWith(
@@ -141,7 +133,7 @@ describe("ACDMPlatform", function () {
       );
     });
 
-    it("should be fail if user is alredy referer", async () => {
+    it("should be fail if the user is alredy referer", async () => {
       // signer becomes referer
       await platform.register(constants.AddressZero);
       await platform.connect(acc1).register(signer.address);
@@ -255,7 +247,7 @@ describe("ACDMPlatform", function () {
       expect(await signer.getBalance()).to.eq(prevUserBalance);
     });
 
-    it("should be fail if user tries to buy tokens with not enough ethers", async () => {
+    it("should be fail if the user tries to buy tokens with not enough ethers", async () => {
       await platform.startSaleRound();
       await expect(platform.buyToken(100)).to.be.revertedWith(
         "Platform: not enough funds"
@@ -266,6 +258,9 @@ describe("ACDMPlatform", function () {
   describe("startTradeRound", () => {
     it("should start a trade round", async () => {
       await platform.startSaleRound();
+      await platform.buyToken(1, { value: utils.parseEther("1") });
+      expect(await platform.totalBuyedTokens()).to.eq(1);
+
       await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
 
       const tx = await platform.startTradeRound();
@@ -275,18 +270,26 @@ describe("ACDMPlatform", function () {
       expect(await platform.roundEndTime()).to.eq(ts + ROUND_TIME);
       expect(await platform.roundStatus()).to.eq(TRADE);
       expect(await token.balanceOf(platform.address)).to.eq(0);
+      expect(await platform.totalBuyedTokens()).to.eq(0);
     });
 
-    it("should be fail if user tries to start trade round again after trade round", async () => {
+    it("should be fail if the user tries to start trade round again after trade round", async () => {
+      await platform.startSaleRound();
+      await platform.buyToken(1, { value: utils.parseEther("1") });
+
+      await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
+
+      await platform.startTradeRound();
       await expect(platform.startTradeRound()).to.be.revertedWith(
         "Platform: sale round is not over"
       );
     });
 
-    it("should be fail if user tries to start a trade round too early", async () => {
+    it("should be fail if the user tries to start a trade round too early", async () => {
       const saleTx = await platform.startSaleRound();
+      await platform.buyToken(1, { value: utils.parseEther("1") });
       await expect(platform.startTradeRound()).to.be.revertedWith(
-        "Platform: time of the last round is not over"
+        "Platform: time of the last round is not over or amount of tokens is not zero"
       );
 
       const ts = await getTimestamp(saleTx.blockNumber as number);
@@ -322,7 +325,7 @@ describe("ACDMPlatform", function () {
       ).to.be.revertedWith("Platform: zero funds");
     });
 
-    it("should be fail if user doesn't have enough tokens", async () => {
+    it("should be fail if the user doesn't have enough tokens", async () => {
       await token.approve(platform.address, 1000);
       await expect(
         platform.addOrder(1000, utils.parseEther("0.02"))
@@ -452,6 +455,7 @@ describe("ACDMPlatform", function () {
 
     it("should be fail if invalid index", async () => {
       await platform.startSaleRound();
+      await platform.buyToken(1, { value: utils.parseEther("1") });
 
       await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
       await platform.startTradeRound();

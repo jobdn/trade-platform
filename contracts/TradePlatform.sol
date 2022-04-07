@@ -12,6 +12,7 @@ import "./test/TradeToken.sol";
 contract TradePlatform is ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public INITIAL_TOKEN_AMOUNT;
+    uint256 public totalBuyedTokens;
     uint256 public roundTime;
     uint256 public tradeStock;
     uint256 public roundStartTime;
@@ -82,17 +83,18 @@ contract TradePlatform is ReentrancyGuard {
             "Platform: time of the last round is not over"
         );
 
-        roundStatus = RoundStatus.SALE;
         if (tokenPrice == 0) {
             // Sale round starts for the first time
             tokenPrice = 1 ether / INITIAL_TOKEN_AMOUNT;
             tokens = INITIAL_TOKEN_AMOUNT;
+            roundStatus = RoundStatus.SALE;
         } else {
             if (tradeStock == 0) {
                 startTradeRound();
             } else {
                 tokenPrice = (tokenPrice * 103) / 100 + 4 * 10**12;
                 tokens = tradeStock / tokenPrice;
+                roundStatus = RoundStatus.SALE;
             }
         }
         TradeToken(token).mint(address(this), tokens);
@@ -110,15 +112,17 @@ contract TradePlatform is ReentrancyGuard {
             roundStatus == RoundStatus.SALE,
             "Platform: sale round is not over"
         );
+        require(totalBuyedTokens != 0, "Platfomr: there is nothing to trade");
         if (block.timestamp <= roundEndTime && tokens != 0) {
             revert NotExpiredTimeError(
-                "Platform: time of the last round is not over"
+                "Platform: time of the last round is not over or amount of tokens is not zero"
             );
         }
 
         TradeToken(token).burn(address(this), tokens);
         tokens = 0;
         tradeStock = 0;
+        // totalBuyedTokens = 0;
         roundStartTime = block.timestamp;
         roundEndTime = roundStartTime + roundTime;
         roundStatus = RoundStatus.TRADE;
@@ -135,7 +139,7 @@ contract TradePlatform is ReentrancyGuard {
             "Platform: not enough tokens on the plaftorm"
         );
         require(
-            msg.value / tokenPrice >= _amount,
+            msg.value >= _amount * tokenPrice,
             "Platform: not enough funds"
         );
 
@@ -161,6 +165,7 @@ contract TradePlatform is ReentrancyGuard {
 
         IERC20(token).safeTransfer(msg.sender, _amount);
         tokens -= _amount;
+        totalBuyedTokens += _amount;
         if (tokens == 0) {
             startTradeRound();
         }
@@ -181,7 +186,7 @@ contract TradePlatform is ReentrancyGuard {
      * @param  _price Price for amount of tokens
      */
     function addOrder(uint256 _amount, uint256 _price) public onlyTradeRound {
-        require(_amount != 0, "Platform: zero funds");
+        require(_amount != 0, "Platform: zero funds are sent");
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
         orders.push(
             Order({
@@ -244,8 +249,10 @@ contract TradePlatform is ReentrancyGuard {
         IERC20(token).safeTransfer(msg.sender, _amount);
 
         orders[_id].tokensInOrder -= _amount;
-        tradeStock += spendedETH;
+        // TODO: when order is redeemed sub amount
+        // !!! totalBuyedTokens -= _amount;
         orders[_id].price -= spendedETH;
+        tradeStock += spendedETH;
         if (orders[_id].tokensInOrder == 0) {
             orders[_id].closed = true;
         }
