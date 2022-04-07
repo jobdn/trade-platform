@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import { config } from "../config";
 
-task("startTrade", "Starts a trade round").setAction(async (taskArgs, hre) => {
+task("startSale", "Starts a sale round").setAction(async (taskArgs, hre) => {
   const [signer] = await hre.ethers.getSigners();
   const platform = await hre.ethers.getContractAt(
     "TradePlatform",
