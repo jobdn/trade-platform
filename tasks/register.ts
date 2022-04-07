@@ -14,8 +14,8 @@ task("register", "Registers a user")
 
     await platform.register(referer);
     if (referer === constants.AddressZero) {
-      console.log(`${signer} became a referer`);
+      console.log(`${signer.address} became a referer`);
     } else {
-      console.log(`${signer} is a referer of ${referer}`);
+      console.log(`${signer.address} is a referer of ${referer}`);
     }
   });
