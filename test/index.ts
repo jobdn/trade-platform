@@ -318,7 +318,7 @@ describe("ACDMPlatform", function () {
       await network.provider.send("evm_increaseTime", [ROUND_TIME + 1]);
 
       await expect(platform.startTradeRound()).to.be.revertedWith(
-        "Platform: nothing to trade in the first srade round"
+        "Platform: nothing to trade in the first trade round"
       );
     });
   });

@@ -84,7 +84,7 @@ contract TradePlatform is IPlatform, ReentrancyGuard {
 
         if (tokens == INITIAL_TOKEN_AMOUNT && firstTradeRound) {
             revert TradeError(
-                "Platform: nothing to trade in the first srade round"
+                "Platform: nothing to trade in the first trade round"
             );
         }
         if (block.timestamp <= roundEndTime && tokens != 0) {
@@ -114,7 +114,7 @@ contract TradePlatform is IPlatform, ReentrancyGuard {
 
         uint256 refund = msg.value - tokenPrice * _amount;
         if (refund > 0) {
-            msg.sender.call{value: refund}("You sent more than need ETH");
+            msg.sender.call{value: refund}("");
         }
 
         address firstReferer = users[msg.sender].referer;
@@ -124,12 +124,12 @@ contract TradePlatform is IPlatform, ReentrancyGuard {
                 uint256 SECOND_REFERER_FEE = 3;
                 secondReferer.call{
                     value: (_amount * tokenPrice * SECOND_REFERER_FEE) / 100
-                }("Percentage of second referer");
+                }("");
             }
             uint256 FIRST_REFERER_FEE = 5;
             firstReferer.call{
                 value: (_amount * tokenPrice * FIRST_REFERER_FEE) / 100
-            }("Percentage of first referer");
+            }("");
         }
 
         IERC20(token).safeTransfer(msg.sender, _amount);
@@ -197,13 +197,11 @@ contract TradePlatform is IPlatform, ReentrancyGuard {
             address secondReferer = users[firstReferer].referer;
             if (secondReferer != address(0)) {
                 secondReferer.call{value: (spendedETH * REFERER_FEE) / 1000}(
-                    "Percentage of second referer"
+                    ""
                 );
             }
 
-            firstReferer.call{value: (spendedETH * REFERER_FEE) / 1000}(
-                "Percentage of first referer"
-            );
+            firstReferer.call{value: (spendedETH * REFERER_FEE) / 1000}("");
         }
 
         IERC20(token).safeTransfer(msg.sender, _amount);
