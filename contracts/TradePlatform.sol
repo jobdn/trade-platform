@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "hardhat/console.sol";
-
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -12,7 +10,6 @@ import "./test/TradeToken.sol";
 contract TradePlatform is ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public INITIAL_TOKEN_AMOUNT;
-    bool public firstTradeRound;
     uint256 public roundTime;
     uint256 public tradeStock;
     uint256 public roundStartTime;
@@ -20,6 +17,7 @@ contract TradePlatform is ReentrancyGuard {
     uint256 public tokenPrice;
     uint256 public tokens;
     address public token;
+    bool public firstTradeRound;
     mapping(address => User) public users;
     RoundStatus public roundStatus;
     Order[] public orders;
@@ -58,7 +56,7 @@ contract TradePlatform is ReentrancyGuard {
      * @param _referer Address of referer
      */
     function register(address _referer) public {
-        require(msg.sender != _referer, "Plafrotm: invalid referer");
+        require(msg.sender != _referer, "Platform: invalid referer");
         require(!users[msg.sender].isReferer, "Platform: already referer");
 
         users[msg.sender].isReferer = true;
@@ -107,6 +105,8 @@ contract TradePlatform is ReentrancyGuard {
      *  @notice Starts Trade round
      *  @dev This function can be called before expiration of sale round
      *      When all tokens are sold or 'tradeStock' is equal to zero
+     *
+     *      At least one token must be sold in the first sale round
      */
     function startTradeRound() public {
         require(

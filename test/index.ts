@@ -65,6 +65,7 @@ describe("ACDMPlatform", function () {
       expect(platform.address).to.be.properAddress;
       expect(await platform.token()).to.eq(token.address);
       expect(await platform.roundTime()).to.eq(ROUND_TIME);
+      expect(await platform.firstTradeRound()).to.eq(true);
       expect(await platform.INITIAL_TOKEN_AMOUNT()).to.eq(INITIAL_TOKEN_AMOUNT);
       expect(await platform.roundStatus()).to.eq(TRADE);
     });
@@ -145,7 +146,7 @@ describe("ACDMPlatform", function () {
 
     it("should be fail if invalid referer", async () => {
       await expect(platform.register(signer.address)).to.be.revertedWith(
-        "Plafrotm: invalid referer"
+        "Platform: invalid referer"
       );
     });
 
