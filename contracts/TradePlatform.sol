@@ -118,6 +118,7 @@ contract TradePlatform is ReentrancyGuard {
 
         TradeToken(token).burn(address(this), tokens);
         tokens = 0;
+        tradeStock = 0;
         roundStartTime = block.timestamp;
         roundEndTime = roundStartTime + roundTime;
         roundStatus = RoundStatus.TRADE;
